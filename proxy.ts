@@ -1,4 +1,6 @@
-export { auth as middleware } from '@/lib/auth';
+import exp from 'constants';
+
+export { auth as proxy } from '@/lib/auth';
 
 // Don't invoke Middleware on some paths
 export const config = {
