@@ -75,10 +75,15 @@ export async function POST(req: Request) {
         };
         //console.log('Available tools:', Object.keys(tools));
 
-        const promptWithToolCalls = `${prompt}\n\nYou are an agent capable of running tools.  Use the available tools to answer the question.  
-        When you use a tool, use the resulting content text from the tool in your response.  
-        Only use tools that are available.  If you don't know the answer, use the "search" tool to search the web for relevant information.`;
+        const promptWithToolCalls = `You are an AI agent capable of running tools.  Use the available tools to answer the prompt.  
+        Be precise and answer the prompt directly using tools when possible.  Provide the answer that even a seven year old could understand. 
+        Only run tools that are available.  If you don't know the answer, use the "search" tool to search the web for relevant information.\n\n
+        Prompt: ${prompt}`;
 
+        // Call the model with the prompt and tools, and stream the response back to the client
+        // The onFinish callback is important to ensure resources are freed and connections are closed after the response is complete.
+        // The onError callback is optional but recommended to handle any errors that occur during processing and ensure resources are cleaned up.
+        // The tool results are available in the response object after the model has finished processing and can be used to inform subsequent calls or the final response.
         const response = await streamText({
             model: openai('gpt-5-nano'),
             tools,
@@ -99,7 +104,31 @@ export async function POST(req: Request) {
             },
         });
 
-        return response.toTextStreamResponse();
+        let reply = response;
+        const toolResults = await response.toolResults;
+
+        // If no tools were called, you can return the model's response directly.  
+        // If tools were called, you can use the tool results to determine how to formulate the final response.
+        if (toolResults && toolResults.length > 0) {
+            /*
+            for (const toolResult of toolResults) {
+                console.log(`Tool "${toolResult.toolName}" was called with input:`, toolResult.input);
+                console.log(`Tool "${toolResult.toolName}" returned output:`, toolResult.output);
+                const output = toolResult.output as { content: { type: string; text: string }[] };
+                for (const contentItem of output.content) {
+                    if (contentItem.type === 'text') {
+                        console.log(`Tool "${toolResult.toolName}" output text:`, contentItem.text);
+                    }
+                }
+            }
+            */
+            reply = await streamText({
+                model: openai('gpt-5-nano'),
+                prompt: `Based on the following tool results, provide a final answer to the original prompt:\n\n${JSON.stringify(toolResults)}`,
+            });
+        }
+
+        return reply.toTextStreamResponse();
     } catch (error) {
         return new Response('Internal Server Error', { status: 500 });
     }
