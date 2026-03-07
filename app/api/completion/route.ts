@@ -43,6 +43,7 @@ export async function POST(req: Request) {
             },
         });
 
+        /*
         // Connect to a Server-Sent Events (SSE) MCP server directly via the client transport config
         const sseClient = await createMCPClient({
             transport: {
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
                 // authProvider: myOAuthClientProvider,
             },
         });
+        */
 
         // Alternatively, you can create transports with the official SDKs instead of direct config:
         // const httpTransport = new StreamableHTTPClientTransport(new URL('http://localhost:3000/mcp'));
@@ -65,22 +67,27 @@ export async function POST(req: Request) {
 
         //const toolSetOne = await stdioClient.tools();
         const toolSetTwo = await httpClient.tools();
-        const toolSetThree = await sseClient.tools();
+        //const toolSetThree = await sseClient.tools();
         const tools = {
             //...toolSetOne,
             ...toolSetTwo,
-            ...toolSetThree, // note: this approach causes subsequent tool sets to override tools with the same name
+            //...toolSetThree, // note: this approach causes subsequent tool sets to override tools with the same name
         };
+        //console.log('Available tools:', Object.keys(tools));
+
+        const promptWithToolCalls = `${prompt}\n\nYou are an agent capable of running tools.  Use the available tools to answer the question.  
+        When you use a tool, use the resulting content text from the tool in your response.  
+        Only use tools that are available.  If you don't know the answer, use the "search" tool to search the web for relevant information.`;
 
         const response = await streamText({
             model: openai('gpt-5-nano'),
             tools,
-            prompt,
+            prompt: promptWithToolCalls,
             // When streaming, the client should be closed after the response is finished:
             onFinish: async () => {
                 //await stdioClient.close();
                 await httpClient.close();
-                await sseClient.close();
+                //await sseClient.close();
             },
             // Closing clients onError is optional
             // - Closing: Immediately frees resources, prevents hanging connections
@@ -88,7 +95,7 @@ export async function POST(req: Request) {
             onError: async error => {
                 //await stdioClient.close();
                 await httpClient.close();
-                await sseClient.close();
+                //await sseClient.close();
             },
         });
 
