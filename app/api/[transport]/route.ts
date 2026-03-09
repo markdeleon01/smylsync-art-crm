@@ -1,7 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 
-import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail } from "@/lib/services/patients";
+import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById } from "@/lib/services/patients";
 
 // MCP server
 const handler = createMcpHandler(
@@ -15,16 +15,22 @@ const handler = createMcpHandler(
             async () => {
                 // Implementation for retrieving all patients information
                 const patients = await getAllPatients();
-                console.log('Retrieved patients:', patients);
-                let patientInfo = '';
-                for (const patient of patients) {
-                    patientInfo += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                //console.log('Retrieved patients:', patients);
+                let patientsInfos = '';
+                if (patients.length > 0) {
+                    patientsInfos += `All patients information retrieved successfully.\n\n`;
+                    for (const patient of patients) {
+                        patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                    patientsInfos += `${patientsInfos}`;
+                } else {
+                    patientsInfos += `No patients were found.`;
                 }
 
                 return {
                     content: [
                         {
-                            type: "text", text: `All patients information retrieved successfully.\n${patientInfo}`
+                            type: "text", text: `${patientsInfos}`
                         }
                     ],
                 };
@@ -32,7 +38,7 @@ const handler = createMcpHandler(
         );
 
         server.registerTool(
-            "get_patient_info_by_id",
+            "get_patient_by_id",
             {
                 title: "Get Patient Information by ID",
                 description: "Use this tool to retrieve information about a patient given their ID.",
@@ -43,16 +49,117 @@ const handler = createMcpHandler(
             async ({ id }) => {
                 // Implementation for retrieving patient information by ID
                 const patient = await getPatientById(id);
-                console.log('Retrieved patient:', patient);
+                //console.log('Retrieved patient:', patient);
+                let patientInfo = '';
+                if (patient) {
+                    patientInfo += `Patient with id '${id}' information retrieved successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`
+                } else {
+                    patientInfo += `No patient with id '${id}' was found.`;
+                }
 
                 return {
                     content: [
                         {
-                            type: "text", text: `Patient information retrieved successfully.\n
-                            Patient ID: ${patient.id}\n
-                            First Name: ${patient.firstname}\n
-                            Last Name: ${patient.lastname}\n
-                            Email: ${patient.email}\n`
+                            type: "text", text: `${patientInfo}`
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "get_patients_by_lastname",
+            {
+                title: "Get Patients by Last Name",
+                description: "Use this tool to retrieve information about patients given their last name.",
+                inputSchema: {
+                    lastname: z.string().max(255)
+                }
+            },
+            async ({ lastname }) => {
+                // Implementation for retrieving patients by last name
+                const patients = await getPatientsByLastName(lastname);
+                //console.log('Retrieved patients:', patients);
+                let patientsInfos = '';
+                if (patients.length > 0) {
+                    patientsInfos += `All patients with last name '${lastname}' information retrieved successfully.\n\n`;
+                    for (const patient of patients) {
+                        patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                    patientsInfos += `${patientsInfos}`;
+                } else {
+                    patientsInfos += `No patients were found.`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: `${patientsInfos}`
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "get_patients_by_firstname",
+            {
+                title: "Get Patients by First Name",
+                description: "Use this tool to retrieve information about patients given their first name.",
+                inputSchema: {
+                    firstname: z.string().max(255)
+                }
+            },
+            async ({ firstname }) => {
+                // Implementation for retrieving patients by first name
+                const patients = await getPatientsByFirstName(firstname);
+                //console.log('Retrieved patients:', patients);
+                let patientsInfos = '';
+                if (patients.length > 0) {
+                    patientsInfos += `All patients with first name '${firstname}' information retrieved successfully.\n\n`;
+                    for (const patient of patients) {
+                        patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                    patientsInfos += `${patientsInfos}`;
+                } else {
+                    patientsInfos += `No patients were found.`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: `${patientsInfos}`
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "get_patient_by_email",
+            {
+                title: "Get Patient Information by Email",
+                description: "Use this tool to retrieve information about a patient given their email address.",
+                inputSchema: {
+                    email: z.string()
+                },
+            },
+            async ({ email }) => {
+                // Implementation for retrieving patient information by ID
+                const patient = await getPatientByEmail(email);
+                //console.log('Retrieved patient:', patient);
+                let patientInfo = '';
+                if (patient) {
+                    patientInfo += `Patient with email '${email}' information retrieved successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`
+
+                } else {
+                    patientInfo += `No patient with email '${email}' was found.`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: `${patientInfo}`
                         }
                     ],
                 };
@@ -72,14 +179,12 @@ const handler = createMcpHandler(
             async ({ id, firstname }) => {
                 // Implementation for updating patient first name in the database
                 const updatedPatient = await updatePatientFirstName(id, firstname);
-                console.log('Updated patient:', updatedPatient);
+                //console.log('Updated patient:', updatedPatient);
 
                 return {
                     content: [
                         {
-                            type: "text", text: `Patient first name updated successfully.\n
-                            Patient ID: ${updatedPatient.id}\n
-                            New First Name: ${updatedPatient.firstname}`
+                            type: "text", text: `Patient first name updated successfully.\nPatient ID: ${updatedPatient.id}\nNew First Name: ${updatedPatient.firstname}`
                         }
                     ],
                 };
@@ -99,14 +204,12 @@ const handler = createMcpHandler(
             async ({ id, lastname }) => {
                 // Implementation for updating patient last name in the database
                 const updatedPatient = await updatePatientLastName(id, lastname);
-                console.log('Updated patient:', updatedPatient);
+                //console.log('Updated patient:', updatedPatient);
 
                 return {
                     content: [
                         {
-                            type: "text", text: `Patient last name updated successfully.\n
-                            Patient ID: ${updatedPatient.id}\n
-                            New Last Name: ${updatedPatient.lastname}`
+                            type: "text", text: `Patient last name updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Last Name: ${updatedPatient.lastname}`
                         }
                     ],
                 };
@@ -126,14 +229,62 @@ const handler = createMcpHandler(
             async ({ id, email }) => {
                 // Implementation for updating patient email in the database
                 const updatedPatient = await updatePatientEmail(id, email);
-                console.log('Updated patient:', updatedPatient);
+                //console.log('Updated patient:', updatedPatient);
 
                 return {
                     content: [
                         {
-                            type: "text", text: `Patient email updated successfully.\n
-                            Patient ID: ${updatedPatient.id}\n
-                            New Email: ${updatedPatient.email}`
+                            type: "text", text: `Patient email updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Email: ${updatedPatient.email}`
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "create_new_patient",
+            {
+                title: "Create New Patient",
+                description: "Use this tool when a user asks to create a new patient.",
+                inputSchema: {
+                    firstname: z.string().max(255),
+                    lastname: z.string().max(255),
+                    email: z.string().max(255),
+                },
+            },
+            async ({ firstname, lastname, email }) => {
+                // Implementation for creating new patient in the database
+                const patient = await createPatient(firstname, lastname, email);
+                //console.log('Updated patient:', updatedPatient);
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: `Patient created successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}`
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "delete_patient_by_id",
+            {
+                title: "Delete Patient Information by ID",
+                description: "Use this tool to delete or remove a patient given their ID.",
+                inputSchema: {
+                    id: z.string()
+                },
+            },
+            async ({ id }) => {
+                // Implementation for retrieving patient information by ID
+                const patient = await deletePatientById(id);
+                //console.log('Retrieved patient:', patient);
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: `Patient with id '${id}' information deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`
                         }
                     ],
                 };
