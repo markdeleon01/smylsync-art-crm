@@ -22,7 +22,6 @@ const handler = createMcpHandler(
                     for (const patient of patients) {
                         patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
                     }
-                    patientsInfos += `${patientsInfos}`;
                 } else {
                     patientsInfos += `No patients were found.`;
                 }
@@ -86,7 +85,6 @@ const handler = createMcpHandler(
                     for (const patient of patients) {
                         patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
                     }
-                    patientsInfos += `${patientsInfos}`;
                 } else {
                     patientsInfos += `No patients were found.`;
                 }
@@ -120,7 +118,6 @@ const handler = createMcpHandler(
                     for (const patient of patients) {
                         patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
                     }
-                    patientsInfos += `${patientsInfos}`;
                 } else {
                     patientsInfos += `No patients were found.`;
                 }

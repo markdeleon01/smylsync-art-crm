@@ -10,12 +10,12 @@ import { createOpenAI } from '@ai-sdk/openai';
 // import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp';
 
 export async function POST(req: Request) {
-    const { prompt }: { prompt: string } = await req.json();
+    const { message }: { message: string } = await req.json();
 
     const openai = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY
     });
-    
+
     try {
         /*
         // Initialize an MCP client to connect to a `stdio` MCP server (local only):
@@ -75,60 +75,48 @@ export async function POST(req: Request) {
         };
         //console.log('Available tools:', Object.keys(tools));
 
-        const promptWithToolCalls = `You are an AI agent capable of running tools.  Use the available tools to answer the prompt.  
+        const promptWithToolCalls = `Your name is ART, SMYLSYNC's internal operations agent capable of running tools.  Use the available tools to answer the prompt.  
         Be precise and answer the prompt directly using tools when possible.  Provide the answer that even a seven year old could understand. 
-        Only run tools that are available.  If you don't know the answer, use the "search" tool to search the web for relevant information.\n\n
-        Prompt: ${prompt}`;
+        Only run tools that are available.  You can only do things or answer questions based on the available tools.\n\n
+        Prompt: ${message}`;
 
-        // Call the model with the prompt and tools, and stream the response back to the client
-        // The onFinish callback is important to ensure resources are freed and connections are closed after the response is complete.
-        // The onError callback is optional but recommended to handle any errors that occur during processing and ensure resources are cleaned up.
-        // The tool results are available in the response object after the model has finished processing and can be used to inform subsequent calls or the final response.
-        const response = await streamText({
+        // Call the gpt-5-nano (faster and cheaper) model to decide which tool(s) to call and with what arguments.
+        const response = streamText({
             model: openai('gpt-5-nano'),
             tools,
             prompt: promptWithToolCalls,
-            // When streaming, the client should be closed after the response is finished:
             onFinish: async () => {
-                //await stdioClient.close();
                 await httpClient.close();
-                //await sseClient.close();
             },
-            // Closing clients onError is optional
-            // - Closing: Immediately frees resources, prevents hanging connections
-            // - Not closing: Keeps connection open for retries
             onError: async error => {
-                //await stdioClient.close();
                 await httpClient.close();
-                //await sseClient.close();
             },
         });
 
-        let reply = response;
+        // Wait for tool results to be processed
         const toolResults = await response.toolResults;
 
-        // If no tools were called, you can return the model's response directly.  
-        // If tools were called, you can use the tool results to determine how to formulate the final response.
+        // If tools were called, generate a final response based on the tool results only
         if (toolResults && toolResults.length > 0) {
-            /*
             for (const toolResult of toolResults) {
                 console.log(`Tool "${toolResult.toolName}" was called with input:`, toolResult.input);
                 console.log(`Tool "${toolResult.toolName}" returned output:`, toolResult.output);
-                const output = toolResult.output as { content: { type: string; text: string }[] };
-                for (const contentItem of output.content) {
-                    if (contentItem.type === 'text') {
-                        console.log(`Tool "${toolResult.toolName}" output text:`, contentItem.text);
-                    }
-                }
             }
-            */
-            reply = await streamText({
+
+            // Return only the final response based on tool results
+            // Use a more powerful model for the final response if desired, since it won't be calling tools and just needs to synthesize the tool results into a final answer
+            // Summarizes results and avoids “general knowledge” drift.
+            const finalResponse = streamText({
                 model: openai('gpt-5-nano'),
-                prompt: `Based on the following tool results, provide a final answer to the original prompt:\n\n${JSON.stringify(toolResults)}`,
+                prompt: `Based on the following tool results, provide a final answer to the original prompt:\n\nPrompt: ${message}\n\nTool Results: ${JSON.stringify(toolResults)}`,
             });
+
+            return finalResponse.toTextStreamResponse();
         }
 
-        return reply.toTextStreamResponse();
+        // If no tools were called, return the original response
+        return response.toTextStreamResponse();
+
     } catch (error) {
         return new Response('Internal Server Error', { status: 500 });
     }

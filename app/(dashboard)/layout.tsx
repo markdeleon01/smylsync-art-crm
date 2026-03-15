@@ -2,35 +2,34 @@ import Link from 'next/link';
 import {
   Home,
   LineChart,
-  Package,
-  Package2,
+  FileText,
+  Calendar,
   PanelLeft,
   Settings,
   ShoppingCart,
   Users2
 } from 'lucide-react';
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+  SheetTitle
+} from '@/components/ui/sheet';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip';
+import ArtBot from '@/components/art';
 import { Analytics } from '@vercel/analytics/react';
 import { User } from './user';
-import { VercelLogo } from '@/components/icons';
 import Providers from './providers';
 import { NavItem } from './nav-item';
 import { SearchInput } from './search';
+import { DashboardBreadcrumb } from './breadcrumb';
 
 export default function DashboardLayout({
   children
@@ -53,6 +52,7 @@ export default function DashboardLayout({
           </main>
         </div>
         <Analytics />
+        <ArtBot />
       </main>
     </Providers>
   );
@@ -62,7 +62,7 @@ function DesktopNav() {
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
       <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-        <NavItem href="/" label="Dashboard">
+        <NavItem href="/" label="Home">
           <Home className="h-5 w-5" />
         </NavItem>
 
@@ -70,8 +70,12 @@ function DesktopNav() {
           <Users2 className="h-5 w-5" />
         </NavItem>
 
+        <NavItem href="/schedules" label="Schedules">
+          <Calendar className="h-5 w-5" />
+        </NavItem>
+
         <NavItem href="/claims" label="Claims">
-          <Package className="h-5 w-5" />
+          <FileText className="h-5 w-5" />
         </NavItem>
 
         <NavItem href="/analytics" label="Analytics">
@@ -106,61 +110,55 @@ function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="sm:max-w-xs">
+        <SheetTitle>Navigation Menu</SheetTitle>
         <nav className="grid gap-6 text-lg font-medium">
-          <Link
-            href="/"
-            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-          >
-            <Home className="h-5 w-5" />
-            Dashboard
-          </Link>
-          <Link
-            href="/patients"
-            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-          >
-            <Users2 className="h-5 w-5" />
-            Patients
-          </Link>
-          <Link
-            href="/claims"
-            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-          >
-            <Package className="h-5 w-5" />
-            Claims
-          </Link>
-          <Link
-            href="/analytics"
-            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-          >
-            <LineChart className="h-5 w-5" />
-            Analytics
-          </Link>
+          <SheetClose asChild>
+            <Link
+              href="/"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Home className="h-5 w-5" />
+              Home
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link
+              href="/patients"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Users2 className="h-5 w-5" />
+              Patients
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link
+              href="/schedules"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Calendar className="h-5 w-5" />
+              Schedules
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link
+              href="/claims"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <FileText className="h-5 w-5" />
+              Claims
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link
+              href="/analytics"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <LineChart className="h-5 w-5" />
+              Analytics
+            </Link>
+          </SheetClose>
         </nav>
       </SheetContent>
     </Sheet>
-  );
-}
-
-function DashboardBreadcrumb() {
-  return (
-    <Breadcrumb className="hidden md:flex">
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/">Dashboard</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/patients">Patients</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>All Patients</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
   );
 }

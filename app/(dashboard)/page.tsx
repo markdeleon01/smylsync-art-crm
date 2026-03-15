@@ -7,18 +7,16 @@ import { Button } from '@/components/ui/button';
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-      return (
-        <main className="p-4 md:p-6">
-            <div className="mb-8 space-y-4">
-                <h1 className="font-semibold text-lg md:text-2xl">
-                A.R.T. - Admin Rescue Tool
-                </h1>
-                <p>
-                Welcome to SMYLSYNC!
-                </p>
-            </div>
-        </main>
-      )
+  return (
+    <main className="p-4 md:p-6">
+      <div className="mb-8 space-y-4">
+        <h1 className="font-semibold text-lg md:text-2xl">
+          ART - Admin Rescue Tool
+        </h1>
+        <p>Welcome to SMYLSYNC!</p>
+      </div>
+    </main>
+  );
 }
 /*
 export default async function ProductsPage(
