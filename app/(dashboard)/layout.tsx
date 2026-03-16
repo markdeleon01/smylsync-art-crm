@@ -30,6 +30,7 @@ import Providers from './providers';
 import { NavItem } from './nav-item';
 import { SearchInput } from './search';
 import { DashboardBreadcrumb } from './breadcrumb';
+import { LoadingSpinner } from './loading-spinner';
 
 export default function DashboardLayout({
   children
@@ -53,6 +54,7 @@ export default function DashboardLayout({
         </div>
         <Analytics />
         <ArtBot />
+        <LoadingSpinner />
       </main>
     </Providers>
   );
