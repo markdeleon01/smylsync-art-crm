@@ -111,7 +111,43 @@ export async function POST(req: Request) {
                 prompt: `Based on the following tool results, provide a final answer to the original prompt:\n\nPrompt: ${message}\n\nTool Results: ${JSON.stringify(toolResults)}`,
             });
 
-            return finalResponse.toTextStreamResponse();
+            // Add tool execution metadata at the start of the stream
+            const textStream = finalResponse.toTextStreamResponse();
+            const reader = textStream.body?.getReader();
+
+            if (reader) {
+                // Create a new ReadableStream with tool execution flag prepended
+                const newStream = new ReadableStream({
+                    async start(controller) {
+                        // Send metadata first
+                        controller.enqueue(new TextEncoder().encode('data: {"toolsExecuted": true}\n\n'));
+
+                        // Then pipe the rest
+                        try {
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) {
+                                    controller.close();
+                                    break;
+                                }
+                                controller.enqueue(value);
+                            }
+                        } catch (error) {
+                            controller.error(error);
+                        }
+                    },
+                });
+
+                return new Response(newStream, {
+                    headers: {
+                        'Content-Type': 'text/event-stream',
+                        'Cache-Control': 'no-cache',
+                        'Connection': 'keep-alive',
+                    },
+                });
+            }
+
+            return textStream;
         }
 
         // If no tools were called, return the original response

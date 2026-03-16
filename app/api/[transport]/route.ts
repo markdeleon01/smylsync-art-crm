@@ -1,7 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 
-import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById } from "@/lib/services/patients";
+import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById, deletePatientByLastName, deletePatientByFirstName, deletePatientByEmail } from "@/lib/services/patients";
 
 // Define schemas outside to help with type inference
 const patientIdSchema = z.object({ id: z.string() });
@@ -269,6 +269,90 @@ const handler = createMcpHandler(
                     content: [
                         {
                             type: "text", text: `Patient with id '${id}' information deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "delete_patient_by_lastname",
+            {
+                title: "Delete Patient Information by Last Name",
+                description: "Use this tool to delete or remove a patient given their last name.",
+                inputSchema: patientLastNameSchema,
+            },
+            async ({ lastname }: { lastname: string }) => {
+                const patients = await deletePatientByLastName(lastname);
+                let result = '';
+                if (Array.isArray(patients) && patients.length > 0) {
+                    result = `${patients.length} patient(s) with last name '${lastname}' deleted successfully.\n`;
+                    for (const patient of patients) {
+                        result += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    result = `No patients with last name '${lastname}' were found to delete.`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: result
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "delete_patient_by_firstname",
+            {
+                title: "Delete Patient Information by First Name",
+                description: "Use this tool to delete or remove a patient given their first name.",
+                inputSchema: patientFirstNameSchema,
+            },
+            async ({ firstname }: { firstname: string }) => {
+                const patients = await deletePatientByFirstName(firstname);
+                let result = '';
+                if (Array.isArray(patients) && patients.length > 0) {
+                    result = `${patients.length} patient(s) with first name '${firstname}' deleted successfully.\n`;
+                    for (const patient of patients) {
+                        result += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    result = `No patients with first name '${firstname}' were found to delete.`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: result
+                        }
+                    ],
+                };
+            }
+        );
+
+        server.registerTool(
+            "delete_patient_by_email",
+            {
+                title: "Delete Patient Information by Email",
+                description: "Use this tool to delete or remove a patient given their email address.",
+                inputSchema: patientEmailSchema,
+            },
+            async ({ email }: { email: string }) => {
+                const patient = await deletePatientByEmail(email);
+                let result = '';
+                if (patient) {
+                    result = `Patient with email '${email}' deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
+                } else {
+                    result = `No patient with email '${email}' was found to delete.`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text", text: result
                         }
                     ],
                 };

@@ -82,3 +82,27 @@ export const updatePatientEmail = async (id: string, email: string) => {
     //console.log('updatePatientEmail=', data);
     return data[0];
 }
+
+export const deletePatientByLastName = async (lastname: string) => {
+
+    const sql = neon(process.env.DATABASE_URL!);
+    const data = await sql`DELETE FROM patients WHERE lastname = ${lastname} RETURNING *;`;
+    //console.log('deletePatientByLastName=', data);
+    return data;
+}
+
+export const deletePatientByFirstName = async (firstname: string) => {
+
+    const sql = neon(process.env.DATABASE_URL!);
+    const data = await sql`DELETE FROM patients WHERE firstname = ${firstname} RETURNING *;`;
+    //console.log('deletePatientByFirstName=', data);
+    return data;
+}
+
+export const deletePatientByEmail = async (email: string) => {
+
+    const sql = neon(process.env.DATABASE_URL!);
+    const data = await sql`DELETE FROM patients WHERE email = ${email} RETURNING *;`;
+    //console.log('deletePatientByEmail=', data);
+    return data[0];
+}

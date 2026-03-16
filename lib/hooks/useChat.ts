@@ -17,10 +17,14 @@ export function useChat(options?: UseChatOptions) {
     const [messages, setMessages] = useState<Message[]>(options?.initialMessages || []);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
+    const [toolsExecuted, setToolsExecuted] = useState(false);
 
     const sendMessage = useCallback(
         async (userMessage: string) => {
             if (!userMessage.trim()) return;
+
+            // Reset tool execution flag
+            setToolsExecuted(false);
 
             // Add user message to chat
             const userMsg: Message = {
@@ -63,6 +67,7 @@ export function useChat(options?: UseChatOptions) {
                 // Stream the response
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
+                let fullContent = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -71,14 +76,27 @@ export function useChat(options?: UseChatOptions) {
 
                     const chunk = decoder.decode(value, { stream: true });
 
-                    // Update the assistant message with streamed content
-                    setMessages((prev) =>
-                        prev.map((msg) =>
-                            msg.id === assistantId
-                                ? { ...msg, content: msg.content + chunk }
-                                : msg
-                        )
-                    );
+                    // Check for tool execution metadata
+                    if (chunk.includes('{"toolsExecuted": true}')) {
+                        setToolsExecuted(true);
+                    }
+
+                    // Remove metadata from chunk
+                    const cleanChunk = chunk.replace('data: {"toolsExecuted": true}\n\n', '');
+
+                    // Only add non-metadata content
+                    if (cleanChunk) {
+                        fullContent += cleanChunk;
+
+                        // Update the assistant message with streamed content
+                        setMessages((prev) =>
+                            prev.map((msg) =>
+                                msg.id === assistantId
+                                    ? { ...msg, content: fullContent }
+                                    : msg
+                            )
+                        );
+                    }
                 }
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Unknown error');
@@ -102,5 +120,6 @@ export function useChat(options?: UseChatOptions) {
         error,
         sendMessage,
         setMessages,
+        toolsExecuted,
     };
 }

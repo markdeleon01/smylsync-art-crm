@@ -13,39 +13,56 @@ export default async function PatientsPage() {
 
   return (
     <Fragment>
-      <Card>
-        <CardHeader>
-          <CardTitle>Patients</CardTitle>
-          <CardDescription>View all patients.</CardDescription>
-        </CardHeader>
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
+          <p className="text-gray-600">View all patients.</p>
+        </div>
 
         {patients && patients.length > 0 ? (
-          patients.map((patient) => (
-            <CardContent key={patient.id} className="space-y-4">
-              <div className="border-b pb-4 last:border-b-0">
-                <div>
-                  <div className="mb-2">
-                    <span className="font-bold">ID:</span>
-                    <span className="ml-2">{patient.id}</span>
+          <div className="space-y-4">
+            {patients.map((patient) => (
+              <Card
+                key={patient.id}
+                className="shadow-md hover:shadow-lg transition-shadow"
+              >
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        ID
+                      </p>
+                      <p className="text-lg font-medium text-gray-900">
+                        {patient.id}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        Name
+                      </p>
+                      <p className="text-lg font-medium text-gray-900">
+                        {patient.firstname} {patient.lastname}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        Email
+                      </p>
+                      <p className="text-lg font-medium text-gray-900 break-all">
+                        {patient.email}
+                      </p>
+                    </div>
                   </div>
-                  <div className="mb-2">
-                    <span className="font-bold">Name:</span>
-                    <span className="ml-2">
-                      {patient.firstname} {patient.lastname}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Email:</span>
-                    <span className="ml-2">{patient.email}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          ))
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
-          <p className="text-gray-500">No patients found.</p>
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No patients found.</p>
+          </div>
         )}
-      </Card>
+      </div>
     </Fragment>
   );
 }

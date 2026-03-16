@@ -2,16 +2,25 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChat, type Message } from '@/lib/hooks/useChat';
-import { X } from 'lucide-react';
+import { X, Minus } from 'lucide-react';
 
 const CHATBOT_ORANGE = '#FFA500';
 const CHATBOT_USER_BUBBLE = '#D9F8FF';
 const STORAGE_KEY = 'art-chatbot-messages';
+const OPEN_STATE_KEY = 'art-chatbot-open';
 
 export default function ArtBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
-  const { messages, isLoading, error, sendMessage, setMessages } = useChat({
+  const [isHydrated, setIsHydrated] = useState(false);
+  const {
+    messages,
+    isLoading,
+    error,
+    sendMessage,
+    setMessages,
+    toolsExecuted
+  } = useChat({
     onError: (error) => {
       console.error('Chat error:', error);
     },
@@ -22,18 +31,33 @@ export default function ArtBot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const toggleBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Load persisted messages on mount
+  // Handle hydration and load persisted state from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Load persisted messages
       const savedMessages = localStorage.getItem(STORAGE_KEY);
       if (savedMessages) {
         try {
           const parsed = JSON.parse(savedMessages);
           setInitialMessages(parsed);
+          setMessages(parsed);
         } catch (e) {
           console.error('Failed to load persisted messages:', e);
         }
       }
+
+      // Load persisted open state
+      const savedOpenState = localStorage.getItem(OPEN_STATE_KEY);
+      if (savedOpenState) {
+        try {
+          const isOpenState = JSON.parse(savedOpenState);
+          setIsOpen(isOpenState);
+        } catch (e) {
+          console.error('Failed to load persisted open state:', e);
+        }
+      }
+
+      setIsHydrated(true);
     }
   }, []);
 
@@ -43,6 +67,13 @@ export default function ArtBot() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
+
+  // Persist open state whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(OPEN_STATE_KEY, JSON.stringify(isOpen));
+    }
+  }, [isOpen]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -77,8 +108,26 @@ export default function ArtBot() {
     }
   }, [isLoading, isOpen]);
 
+  // Reload page after tool execution completes
+  useEffect(() => {
+    if (!isLoading && toolsExecuted && messages.length > 0) {
+      // Ensure messages are saved before reload
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+
+      const reloadTimer = setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+      return () => clearTimeout(reloadTimer);
+    }
+  }, [isLoading, toolsExecuted, messages]);
+
   const handleToggle = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleMinimize = () => {
+    setIsOpen(false);
   };
 
   const handleClose = () => {
@@ -86,6 +135,7 @@ export default function ArtBot() {
     setMessages([]);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(OPEN_STATE_KEY);
     }
     setIsOpen(false);
   };
@@ -100,7 +150,10 @@ export default function ArtBot() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+    <div
+      className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3"
+      suppressHydrationWarning
+    >
       {/* Chat Window */}
       {isOpen && (
         <div
@@ -116,13 +169,22 @@ export default function ArtBot() {
               <img src="/favicon.ico" alt="ART" className="h-5 w-5 shrink-0" />
               <h2 className="font-semibold">Ask ART</h2>
             </div>
-            <button
-              onClick={handleClose}
-              className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
-              aria-label="Close chat"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleMinimize}
+                className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Minimize chat"
+              >
+                <Minus size={20} />
+              </button>
+              <button
+                onClick={handleClose}
+                className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Close chat"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Messages Container */}
