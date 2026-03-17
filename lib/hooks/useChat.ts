@@ -48,7 +48,7 @@ export function useChat(options?: UseChatOptions) {
             setMessages((prev) => [...prev, assistantMsg]);
 
             try {
-                const response = await fetch('/api/completion', {
+                const response = await fetch('/api/art', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
