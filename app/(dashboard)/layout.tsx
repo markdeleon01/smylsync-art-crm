@@ -6,8 +6,8 @@ import {
   Calendar,
   PanelLeft,
   Settings,
-  ShoppingCart,
-  Users2
+  Users2,
+  Award
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import { NavItem } from './nav-item';
 import { SearchInput } from './search';
 import { DashboardBreadcrumb } from './breadcrumb';
 import { LoadingSpinner } from './loading-spinner';
+import { Logo } from '@/components/logo';
 
 export default function DashboardLayout({
   children
@@ -64,6 +65,8 @@ function DesktopNav() {
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
       <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+        <Logo />
+
         <NavItem href="/" label="Home">
           <Home className="h-5 w-5" />
         </NavItem>
@@ -78,6 +81,10 @@ function DesktopNav() {
 
         <NavItem href="/claims" label="Claims">
           <FileText className="h-5 w-5" />
+        </NavItem>
+
+        <NavItem href="/credentialing" label="Credentialing">
+          <Award className="h-5 w-5" />
         </NavItem>
 
         <NavItem href="/analytics" label="Analytics">
@@ -112,8 +119,10 @@ function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="sm:max-w-xs">
-        <SheetTitle>Navigation Menu</SheetTitle>
-        <nav className="grid gap-6 text-lg font-medium">
+        <SheetTitle>
+          <Logo />
+        </SheetTitle>
+        <nav className="grid gap-6 text-lg font-medium pt-[20px]">
           <SheetClose asChild>
             <Link
               href="/"
@@ -148,6 +157,15 @@ function MobileNav() {
             >
               <FileText className="h-5 w-5" />
               Claims
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link
+              href="/credentialing"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Award className="h-5 w-5" />
+              Credentialing
             </Link>
           </SheetClose>
           <SheetClose asChild>

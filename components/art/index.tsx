@@ -3,6 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useChat, type Message } from '@/lib/hooks/useChat';
 import { X, Minus } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
 const CHATBOT_ORANGE = '#FFA500';
 const CHATBOT_USER_BUBBLE = '#D9F8FF';
@@ -170,20 +175,32 @@ export default function ArtBot() {
               <h2 className="font-semibold">Ask ART</h2>
             </div>
             <div className="flex items-center gap-1">
-              <button
-                onClick={handleMinimize}
-                className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
-                aria-label="Minimize chat"
-              >
-                <Minus size={20} />
-              </button>
-              <button
-                onClick={handleClose}
-                className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
-                aria-label="Close chat"
-              >
-                <X size={20} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleMinimize}
+                    className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                    aria-label="Minimize chat"
+                  >
+                    <Minus size={20} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Minimize chat window
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleClose}
+                    className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                    aria-label="End chat"
+                  >
+                    <X size={20} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">End chat window</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
