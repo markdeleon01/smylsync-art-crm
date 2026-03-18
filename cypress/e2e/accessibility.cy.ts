@@ -10,7 +10,7 @@ describe('Accessibility Tests', () => {
 
     it('should have semantic HTML elements', () => {
         // Check for header, nav, and main elements
-        cy.get('header').should('exist').or.get('nav').should('exist');
+        cy.get('header, nav, main').should('have.length.greaterThan', 0);
     });
 
     it('should have proper heading hierarchy', () => {
@@ -19,7 +19,7 @@ describe('Accessibility Tests', () => {
 
     it('should have alt text on images', () => {
         cy.get('img').should((images) => {
-            images.each((index, image) => {
+            images.each((_index, image) => {
                 expect(image).to.have.attr('alt');
             });
         });
