@@ -26,7 +26,15 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - .
+            - package.json
+            - package-lock.json
+            - tsconfig.json
+            - vitest.config.ts
+            - cypress.config.ts
+            - app/
+            - components/
+            - lib/
+            - public/
 
   unit-tests:
     executor:
@@ -35,6 +43,14 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          key: node-modules-v2-{{ checksum "package-lock.json" }}
+      - run:
+          name: Install dependencies
+          command: npm ci --legacy-peer-deps
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - run:
           name: Run unit tests with Vitest
           command: npm run test -- --run
@@ -50,6 +66,14 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          key: node-modules-v2-{{ checksum "package-lock.json" }}
+      - run:
+          name: Install dependencies
+          command: npm ci --legacy-peer-deps
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - run:
           name: Type check with TypeScript
           command: npx tsc --noEmit
@@ -61,6 +85,14 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          key: node-modules-v2-{{ checksum "package-lock.json" }}
+      - run:
+          name: Install dependencies
+          command: npm ci --legacy-peer-deps
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - run:
           name: Build Next.js application
           command: npm run build --legacy-peer-deps
@@ -78,6 +110,14 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          key: node-modules-v2-{{ checksum "package-lock.json" }}
+      - run:
+          name: Install dependencies
+          command: npm ci --legacy-peer-deps
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
