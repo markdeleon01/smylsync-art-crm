@@ -11,11 +11,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Clear npm cache
-          command: npm cache clean --force
+          name: Remove node_modules if exists
+          command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm install --legacy-peer-deps
+          command: npm ci
       - persist_to_workspace:
           root: .
           paths:
@@ -37,11 +37,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install dependencies
-          command: npm install --legacy-peer-deps --force
+          name: Remove node_modules if exists
+          command: rm -rf node_modules
       - run:
-          name: Install rolldown binding
-          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+          name: Install dependencies
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -61,11 +61,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install dependencies
-          command: npm install --legacy-peer-deps --force
+          name: Remove node_modules if exists
+          command: rm -rf node_modules
       - run:
-          name: Install rolldown binding
-          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+          name: Install dependencies
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -81,11 +81,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install dependencies
-          command: npm install --legacy-peer-deps --force
+          name: Remove node_modules if exists
+          command: rm -rf node_modules
       - run:
-          name: Install rolldown binding
-          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+          name: Install dependencies
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -107,11 +107,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install dependencies
-          command: npm install --legacy-peer-deps --force
+          name: Remove node_modules if exists
+          command: rm -rf node_modules
       - run:
-          name: Install rolldown binding
-          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+          name: Install dependencies
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
