@@ -12,7 +12,7 @@ jobs:
       - checkout
       - run:
           name: Install build dependencies
-          command: apt-get update && apt-get install -y python3 build-essential
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - run:
           name: Remove node_modules if exists
           command: rm -rf node_modules
@@ -39,7 +39,7 @@ jobs:
     steps:
       - run:
           name: Install build dependencies
-          command: apt-get update && apt-get install -y python3 build-essential
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
@@ -66,7 +66,7 @@ jobs:
     steps:
       - run:
           name: Install build dependencies
-          command: apt-get update && apt-get install -y python3 build-essential
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
@@ -89,7 +89,7 @@ jobs:
     steps:
       - run:
           name: Install build dependencies
-          command: apt-get update && apt-get install -y python3 build-essential
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
@@ -118,7 +118,7 @@ jobs:
     steps:
       - run:
           name: Install build dependencies
-          command: apt-get update && apt-get install -y python3 build-essential
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
