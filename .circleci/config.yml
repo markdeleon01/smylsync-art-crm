@@ -15,7 +15,7 @@ jobs:
           command: npm cache clean --force
       - run:
           name: Install dependencies
-          command: npm ci --legacy-peer-deps
+          command: npm install --legacy-peer-deps
       - persist_to_workspace:
           root: .
           paths:
@@ -38,10 +38,13 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --legacy-peer-deps
+          command: npm install --legacy-peer-deps --force
       - run:
-          name: Rebuild rolldown native binding
-          command: npm rebuild @rolldown/binding-linux-x64-gnu
+          name: Install rolldown binding
+          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - run:
           name: Run unit tests with Vitest
           command: npm run test -- --run
@@ -59,10 +62,13 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --legacy-peer-deps
+          command: npm install --legacy-peer-deps --force
       - run:
-          name: Rebuild rolldown native binding
-          command: npm rebuild @rolldown/binding-linux-x64-gnu
+          name: Install rolldown binding
+          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - run:
           name: Type check with TypeScript
           command: npx tsc --noEmit
@@ -76,10 +82,13 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --legacy-peer-deps
+          command: npm install --legacy-peer-deps --force
       - run:
-          name: Rebuild rolldown native binding
-          command: npm rebuild @rolldown/binding-linux-x64-gnu
+          name: Install rolldown binding
+          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - run:
           name: Build Next.js application
           command: npm run build --legacy-peer-deps
@@ -99,10 +108,13 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --legacy-peer-deps
+          command: npm install --legacy-peer-deps --force
       - run:
-          name: Rebuild rolldown native binding
-          command: npm rebuild @rolldown/binding-linux-x64-gnu
+          name: Install rolldown binding
+          command: npm install @rolldown/binding-linux-x64-gnu --no-save || true
+      - run:
+          name: Rebuild native modules
+          command: npm rebuild
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
