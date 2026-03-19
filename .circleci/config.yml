@@ -48,9 +48,6 @@ jobs:
           name: Install dependencies
           command: npm ci
       - run:
-          name: Rebuild native modules
-          command: npm rebuild
-      - run:
           name: Run unit tests with Vitest
           command: npm run test -- --run
       - store_test_results:
@@ -73,9 +70,6 @@ jobs:
           name: Install dependencies
           command: npm ci
       - run:
-          name: Rebuild native modules
-          command: npm rebuild
-      - run:
           name: Type check with TypeScript
           command: npx tsc --noEmit
 
@@ -94,9 +88,6 @@ jobs:
           name: Install dependencies
           command: npm ci
       - run:
-          name: Rebuild native modules
-          command: npm rebuild
-      - run:
           name: Build Next.js application
           command: npm run build
       - save_cache:
@@ -113,16 +104,13 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install build dependencies
-          command: sudo apt-get update && sudo apt-get install -y python3 build-essential
+          name: Install build and Cypress dependencies
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential xvfb libgtk-3-0 libgconf-2-4
       - attach_workspace:
           at: .
       - run:
           name: Install dependencies
           command: npm ci
-      - run:
-          name: Rebuild native modules
-          command: npm rebuild
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
