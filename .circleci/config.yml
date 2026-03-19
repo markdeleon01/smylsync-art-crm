@@ -18,7 +18,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm install --prefer-offline --no-audit
       - persist_to_workspace:
           root: .
           paths:
@@ -47,7 +47,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm install --prefer-offline --no-audit
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -74,7 +74,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm install --prefer-offline --no-audit
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -97,7 +97,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm install --prefer-offline --no-audit
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -126,7 +126,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm install --prefer-offline --no-audit
       - run:
           name: Rebuild native modules
           command: npm rebuild
