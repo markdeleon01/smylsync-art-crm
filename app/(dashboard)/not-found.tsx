@@ -2,9 +2,6 @@ import Link from 'next/link';
 import { DashboardBreadcrumb } from './breadcrumb';
 import { SearchInput } from './search';
 import { User } from './user';
-import { MobileNav } from './nav-item';
-import { DesktopNav } from './nav-item';
-import { LoadingSpinner } from './loading-spinner';
 
 export default function NotFound() {
   return (
