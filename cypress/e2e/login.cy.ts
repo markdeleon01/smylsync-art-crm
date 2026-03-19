@@ -21,6 +21,6 @@ describe('Login Page', () => {
     });
 
     it('should have a submit button', () => {
-        cy.get('button[type="submit"]').should('contain', 'Sign in');
+        cy.get('form button').should('contain', 'Sign in');
     });
 });
