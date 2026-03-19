@@ -91,7 +91,7 @@ jobs:
           command: npm rebuild
       - run:
           name: Build Next.js application
-          command: npm run build --legacy-peer-deps
+          command: npm run build
       - save_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
           paths:
