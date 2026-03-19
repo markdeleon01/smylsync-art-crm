@@ -40,6 +40,9 @@ jobs:
           name: Install dependencies
           command: npm ci --legacy-peer-deps
       - run:
+          name: Rebuild rolldown native binding
+          command: npm rebuild @rolldown/binding-linux-x64-gnu
+      - run:
           name: Run unit tests with Vitest
           command: npm run test -- --run
       - store_test_results:
@@ -58,6 +61,9 @@ jobs:
           name: Install dependencies
           command: npm ci --legacy-peer-deps
       - run:
+          name: Rebuild rolldown native binding
+          command: npm rebuild @rolldown/binding-linux-x64-gnu
+      - run:
           name: Type check with TypeScript
           command: npx tsc --noEmit
 
@@ -71,6 +77,9 @@ jobs:
       - run:
           name: Install dependencies
           command: npm ci --legacy-peer-deps
+      - run:
+          name: Rebuild rolldown native binding
+          command: npm rebuild @rolldown/binding-linux-x64-gnu
       - run:
           name: Build Next.js application
           command: npm run build --legacy-peer-deps
@@ -91,6 +100,9 @@ jobs:
       - run:
           name: Install dependencies
           command: npm ci --legacy-peer-deps
+      - run:
+          name: Rebuild rolldown native binding
+          command: npm rebuild @rolldown/binding-linux-x64-gnu
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
