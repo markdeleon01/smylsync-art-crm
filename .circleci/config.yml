@@ -18,7 +18,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm install --prefer-offline --no-audit
+          command: npm ci
       - persist_to_workspace:
           root: .
           paths:
@@ -26,6 +26,7 @@ jobs:
             - package-lock.json
             - tsconfig.json
             - vitest.config.ts
+            - vitest.setup.ts
             - cypress.config.ts
             - app/
             - components/
@@ -37,17 +38,15 @@ jobs:
       name: node/default
       tag: '20.12.0'
     steps:
+      - checkout
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
-          name: Remove node_modules if exists
-          command: rm -rf node_modules
-      - run:
           name: Install dependencies
-          command: npm install --prefer-offline --no-audit
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -64,17 +63,15 @@ jobs:
       name: node/default
       tag: '20.12.0'
     steps:
+      - checkout
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
-          name: Remove node_modules if exists
-          command: rm -rf node_modules
-      - run:
           name: Install dependencies
-          command: npm install --prefer-offline --no-audit
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -87,17 +84,15 @@ jobs:
       name: node/default
       tag: '20.12.0'
     steps:
+      - checkout
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
-          name: Remove node_modules if exists
-          command: rm -rf node_modules
-      - run:
           name: Install dependencies
-          command: npm install --prefer-offline --no-audit
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
@@ -116,17 +111,15 @@ jobs:
       name: node/default
       tag: '20.12.0'
     steps:
+      - checkout
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - attach_workspace:
           at: .
       - run:
-          name: Remove node_modules if exists
-          command: rm -rf node_modules
-      - run:
           name: Install dependencies
-          command: npm install --prefer-offline --no-audit
+          command: npm ci
       - run:
           name: Rebuild native modules
           command: npm rebuild
