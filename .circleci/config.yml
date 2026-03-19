@@ -98,14 +98,10 @@ jobs:
           path: .next
 
   e2e-tests:
-    executor:
-      name: node/default
-      tag: '20.12.0'
+    docker:
+      - image: cimg/node:20.12.0-browsers
     steps:
       - checkout
-      - run:
-          name: Install build and Cypress dependencies
-          command: sudo apt-get update && sudo apt-get install -y python3 build-essential xvfb libgtk-3-0 libgconf-2-4 libnspr4 libnss3 libxss1 libappindicator1 libindicator7 gconf-service fonts-liberation xdg-utils wget
       - attach_workspace:
           at: .
       - run:
