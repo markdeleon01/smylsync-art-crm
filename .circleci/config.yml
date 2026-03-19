@@ -105,7 +105,7 @@ jobs:
       - checkout
       - run:
           name: Install build and Cypress dependencies
-          command: sudo apt-get update && sudo apt-get install -y python3 build-essential xvfb libgtk-3-0 libgconf-2-4
+          command: sudo apt-get update && sudo apt-get install -y python3 build-essential xvfb libgtk-3-0 libgconf-2-4 libnspr4 libnss3 libxss1 libappindicator1 libindicator7 gconf-service fonts-liberation xdg-utils wget
       - attach_workspace:
           at: .
       - run:
