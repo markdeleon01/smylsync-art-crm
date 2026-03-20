@@ -17,7 +17,9 @@ export default function NotFound() {
           <h2 className="text-3xl font-semibold text-foreground mt-4">
             Not Found
           </h2>
-          <p className="text-muted-foreground mt-2">This page could not be found</p>
+          <p className="text-muted-foreground mt-2">
+            This page could not be found
+          </p>
         </div>
         <Link
           href="/"

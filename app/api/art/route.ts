@@ -76,8 +76,7 @@ export async function POST(req: Request) {
         //console.log('Available tools:', Object.keys(tools));
 
         const promptWithToolCalls = `Your name is ART, SMYLSYNC's internal operations agent capable of running tools.  Use the available tools to answer the prompt.  
-        Be precise and answer the prompt directly using tools when possible.  Provide the answer that even a seven year old could understand. 
-        Only run tools that are available.  You can only do things or answer questions based on the available tools.\n\n
+        Be precise and answer the prompt directly using tools when possible.  Only run tools that are available.  You can only do things or answer questions based on the available tools.\n\n
         Prompt: ${message}`;
 
         // Call the gpt-5-nano (faster and cheaper) model to decide which tool(s) to call and with what arguments.
@@ -108,7 +107,20 @@ export async function POST(req: Request) {
             // Summarizes results and avoids “general knowledge” drift.
             const finalResponse = streamText({
                 model: openai('gpt-5-nano'),
-                prompt: `Based on the following tool results, provide a final answer to the original prompt:\n\nPrompt: ${message}\n\nTool Results: ${JSON.stringify(toolResults)}`,
+                prompt: `You are ART, SMYLSYNC's internal operations agent.  Follow these rules when generating your final answer:\n
+                - You must NOT answer general knowledge questions directly.\n
+                - You may only answer using information returned by tools.\n
+                - If the user asks a question that could be answered by a tool:  Ask for confirmation to use the tool OR call the tool if the user already consented.\n
+                - If no tool can answer, you must respond with this redirect: “I can’t answer that directly, and I don’t have a tool that can retrieve that information.”\n
+                - Provide the answer that even a seven year old could understand. \n
+                - If user asks a general question and has not opted-in to tool use:  you must respond with a redirect + yes/no question.\n
+                - If user says “yes”:  Allow/force a tool call.\n
+                - If a tool was executed successfully, you must use the tool results to answer the original question.  Do not use any general knowledge or make assumptions that are not based on the tool results.\n
+                - Do not offer any other suggestions, just use the tools necessary to answer the question.\n
+                - Based on the following tool results, provide a final answer to the original prompt:\n\n
+                
+                Prompt: ${message}\n\n
+                Tool Results: ${JSON.stringify(toolResults)}`,
             });
 
             // Add tool execution metadata at the start of the stream
