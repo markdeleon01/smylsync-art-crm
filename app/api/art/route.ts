@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         const httpClient = await createMCPClient({
             transport: {
                 type: 'http',
-                url: 'http://localhost:3000/api/mcp',
+                url: process.env.MCP_URL ?? 'http://localhost:3000/api/mcp',
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const sseClient = await createMCPClient({
             transport: {
                 type: 'sse',
-                url: 'http://localhost:3000/api/sse',
+                url: process.env.SSE_URL ?? 'http://localhost:3000/api/sse',
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },
@@ -117,6 +117,7 @@ export async function POST(req: Request) {
                 - If user says “yes”:  Allow/force a tool call.\n
                 - If a tool was executed successfully, you must use the tool results to answer the original question.  Do not use any general knowledge or make assumptions that are not based on the tool results.\n
                 - Do not offer any other suggestions, just use the tools necessary to answer the question.\n
+                - Always add your response to the overall context window for future interactions.\n
                 - Based on the following tool results, provide a final answer to the original prompt:\n\n
                 
                 Prompt: ${message}\n\n
