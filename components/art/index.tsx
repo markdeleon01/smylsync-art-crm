@@ -157,10 +157,9 @@ export default function ArtBot() {
   return (
     <div
       className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3"
-      suppressHydrationWarning
     >
-      {/* Chat Window */}
-      {isOpen && (
+      {/* Chat Window - only render after hydration */}
+      {isHydrated && isOpen && (
         <div
           className="w-96 h-96 bg-white rounded-lg shadow-xl border-4 flex flex-col overflow-hidden"
           style={{ borderColor: CHATBOT_ORANGE }}
