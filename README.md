@@ -80,7 +80,7 @@ cp .env.example .env
 Update the following in `.env`:
 
 - `NEXTAUTH_SECRET` - Generate with: `openssl rand -base64 32`
-- `NEXTAUTH_URL` - Set to `http://localhost:3000` for development
+- `NEXTAUTH_URL` - Set to `http://localhost:8080` for development
 - `GITHUB_ID` and `GITHUB_SECRET` - From GitHub OAuth app
 - Database credentials (if using PostgreSQL)
 
@@ -96,7 +96,7 @@ For Postgres database, Set database environment variables in `.env`:
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:8080`
 
 ### Available Scripts
 
@@ -169,7 +169,7 @@ npm run cypress:run:headed     # Headed browser mode
 
 **Configuration:**
 
-- Base URL: `http://localhost:3000`
+- Base URL: `http://localhost:8080`
 - Viewport: 1280x720
 - Default timeout: 8 seconds
 - Page load timeout: 30 seconds
@@ -288,7 +288,7 @@ For additional CI/CD customization, set in CircleCI project settings:
 
 ```
 NODE_ENV=test
-NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
 ### Caching Strategy
