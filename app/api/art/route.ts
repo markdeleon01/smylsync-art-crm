@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         const httpClient = await createMCPClient({
             transport: {
                 type: 'http',
-                url: process.env.MCP_URL ?? 'http://localhost:3000/api/mcp',
+                url: process.env.MCP_URL ?? 'http://localhost:3001/mcp',
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const sseClient = await createMCPClient({
             transport: {
                 type: 'sse',
-                url: process.env.SSE_URL ?? 'http://localhost:3000/api/sse',
+                url: process.env.SSE_URL ?? 'http://localhost:3001/sse',
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },
