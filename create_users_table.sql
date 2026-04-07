@@ -2,9 +2,8 @@ DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255),
   name VARCHAR(255),
-  username VARCHAR(255)
+  role VARCHAR(50) NOT NULL DEFAULT 'user'
 );
-
-INSERT INTO users (id, email, name, username) VALUES (1, 'markdeleon@smylsync.com', 'Mark de Leon', 'markdeleon');

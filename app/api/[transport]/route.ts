@@ -21,6 +21,7 @@ const handler = createMcpHandler(
             {
                 title: "Get All Patients Information",
                 description: "Use this tool to retrieve information about all patients.",
+                annotations: { readOnlyHint: true },
             },
             async () => {
                 // Implementation for retrieving all patients information
@@ -52,6 +53,7 @@ const handler = createMcpHandler(
                 title: "Get Patient Information by ID",
                 description: "Use this tool to retrieve information about a patient given their ID.",
                 inputSchema: patientIdSchema,
+                annotations: { readOnlyHint: true },
             },
             async ({ id }: { id: string }) => {
                 // Implementation for retrieving patient information by ID
@@ -79,6 +81,7 @@ const handler = createMcpHandler(
             {
                 title: "Get Patients by Last Name",
                 description: "Use this tool to retrieve information about patients given their last name.",
+                annotations: { readOnlyHint: true },
                 inputSchema: patientLastNameSchema
             },
             async ({ lastname }: { lastname: string }) => {
@@ -110,7 +113,8 @@ const handler = createMcpHandler(
             {
                 title: "Get Patients by First Name",
                 description: "Use this tool to retrieve information about patients given their first name.",
-                inputSchema: patientFirstNameSchema
+                inputSchema: patientFirstNameSchema,
+                annotations: { readOnlyHint: true },
             },
             async ({ firstname }: { firstname: string }) => {
                 // Implementation for retrieving patients by first name
@@ -142,6 +146,7 @@ const handler = createMcpHandler(
                 title: "Get Patient Information by Email",
                 description: "Use this tool to retrieve information about a patient given their email address.",
                 inputSchema: patientEmailSchema,
+                annotations: { readOnlyHint: true },
             },
             async ({ email }: { email: string }) => {
                 // Implementation for retrieving patient information by ID
@@ -171,6 +176,7 @@ const handler = createMcpHandler(
                 title: "Update Patient First Name",
                 description: "Use this tool when a user asks to change or correct a patient's first name given their ID.",
                 inputSchema: updateFirstNameSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
             },
             async ({ id, firstname }: { id: string; firstname: string }) => {
                 // Implementation for updating patient first name in the database
@@ -193,6 +199,7 @@ const handler = createMcpHandler(
                 title: "Update Patient Last Name",
                 description: "Use this tool when a user asks to change or correct a patient's last name given their ID.",
                 inputSchema: updateLastNameSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
             },
             async ({ id, lastname }: { id: string; lastname: string }) => {
                 // Implementation for updating patient last name in the database
@@ -215,6 +222,7 @@ const handler = createMcpHandler(
                 title: "Update Patient Email",
                 description: "Use this tool when a user asks to change or correct a patient's email given their ID.",
                 inputSchema: updateEmailSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
             },
             async ({ id, email }: { id: string; email: string }) => {
                 // Implementation for updating patient email in the database
@@ -235,8 +243,9 @@ const handler = createMcpHandler(
             "create_new_patient",
             {
                 title: "Create New Patient",
-                description: "Use this tool when a user asks to create a new patient.",
+                description: "Use this tool when a user asks to create a new patient.  Ask for confirmation before creating a new patient.",
                 inputSchema: createPatientSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, requiresConfirmation: true },
             },
             async ({ firstname, lastname, email }: { firstname: string; lastname: string; email: string }) => {
                 // Implementation for creating new patient in the database
@@ -257,8 +266,9 @@ const handler = createMcpHandler(
             "delete_patient_by_id",
             {
                 title: "Delete Patient Information by ID",
-                description: "Use this tool to delete or remove a patient given their ID.",
+                description: "Use this tool to delete or remove a patient given their ID.  Ask for confirmation before deleting a patient.",
                 inputSchema: patientIdSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, requiresConfirmation: true },
             },
             async ({ id }: { id: string }) => {
                 // Implementation for retrieving patient information by ID
@@ -279,8 +289,9 @@ const handler = createMcpHandler(
             "delete_patient_by_lastname",
             {
                 title: "Delete Patient Information by Last Name",
-                description: "Use this tool to delete or remove a patient given their last name.",
+                description: "Use this tool to delete or remove a patient given their last name.  Ask for confirmation before deleting a patient.",
                 inputSchema: patientLastNameSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, requiresConfirmation: true },
             },
             async ({ lastname }: { lastname: string }) => {
                 const patients = await deletePatientByLastName(lastname);
@@ -308,8 +319,9 @@ const handler = createMcpHandler(
             "delete_patient_by_firstname",
             {
                 title: "Delete Patient Information by First Name",
-                description: "Use this tool to delete or remove a patient given their first name.",
+                description: "Use this tool to delete or remove a patient given their first name.  Ask for confirmation before deleting a patient.",
                 inputSchema: patientFirstNameSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, requiresConfirmation: true },
             },
             async ({ firstname }: { firstname: string }) => {
                 const patients = await deletePatientByFirstName(firstname);
@@ -337,8 +349,9 @@ const handler = createMcpHandler(
             "delete_patient_by_email",
             {
                 title: "Delete Patient Information by Email",
-                description: "Use this tool to delete or remove a patient given their email address.",
+                description: "Use this tool to delete or remove a patient given their email address.  Ask for confirmation before deleting a patient.",
                 inputSchema: patientEmailSchema,
+                annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, requiresConfirmation: true },
             },
             async ({ email }: { email: string }) => {
                 const patient = await deletePatientByEmail(email);

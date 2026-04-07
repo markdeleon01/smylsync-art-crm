@@ -26,6 +26,12 @@ export function useChat(options?: UseChatOptions) {
             // Reset tool execution flag
             setToolsExecuted(false);
 
+            // Snapshot current messages before adding the new user message
+            // so we can send the prior history to the API
+            const messagesSnapshot = messages
+                .filter((m) => m.content.trim())
+                .map(({ role, content }) => ({ role, content }));
+
             // Add user message to chat
             const userMsg: Message = {
                 id: Date.now().toString(),
@@ -53,7 +59,10 @@ export function useChat(options?: UseChatOptions) {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: userMessage }),
+                    body: JSON.stringify({
+                        message: userMessage,
+                        history: messagesSnapshot,
+                    }),
                 });
 
                 if (!response.ok) {
