@@ -22,6 +22,10 @@ jobs:
       - run:
           name: Install dependencies
           command: pnpm install --frozen-lockfile
+      - save_cache:
+          key: cypress-binary-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.cache/Cypress
       - persist_to_workspace:
           root: .
           paths:
@@ -122,6 +126,11 @@ jobs:
       - run:
           name: Install dependencies
           command: pnpm install --frozen-lockfile
+      - restore_cache:
+          key: cypress-binary-{{ checksum "pnpm-lock.yaml" }}
+      - run:
+          name: Verify Cypress binary
+          command: pnpm exec cypress install --force
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
