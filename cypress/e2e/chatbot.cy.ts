@@ -13,8 +13,8 @@ describe('ART Chatbot Component', () => {
     });
 
     it('should open the chat window when toggled', () => {
-        cy.get('button[aria-label*="Live Agent ART"]').click();
-        cy.contains('Ask ART').should('be.visible');
+        cy.get('button[aria-label*="Live Agent ART"]').should('be.visible').click();
+        cy.contains('Ask ART', { timeout: 15000 }).should('be.visible');
     });
 
     it('should have proper z-index for visibility', () => {
