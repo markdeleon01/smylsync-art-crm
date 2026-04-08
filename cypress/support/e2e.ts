@@ -10,10 +10,10 @@ Cypress.on('uncaught:exception', (err, runnable) => {
     return false;
 });
 
-// Custom command to login (if needed later)
-Cypress.Commands.add('login', (email: string, password: string) => {
-    cy.visit('/login');
-    cy.get('input[type="email"]').type(email);
-    cy.get('input[type="password"]').type(password);
-    cy.get('button[type="submit"]').click();
+// Sets a signed JWT cookie so protected routes load without going through the login UI.
+// Uses the same secret as proxy.ts (JWT_SECRET env var, fallback: 'fallback-secret').
+Cypress.Commands.add('login', () => {
+    cy.task('generateJwtToken').then((token) => {
+        cy.setCookie('token', token as string);
+    });
 });

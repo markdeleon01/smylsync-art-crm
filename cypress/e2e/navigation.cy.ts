@@ -1,5 +1,6 @@
 describe('Navigation and Links', () => {
     beforeEach(() => {
+        cy.login();
         cy.visit('/');
     });
 

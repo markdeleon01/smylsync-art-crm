@@ -1,5 +1,6 @@
 describe('Accessibility Tests', () => {
     beforeEach(() => {
+        cy.login();
         cy.visit('/');
     });
 
@@ -31,7 +32,7 @@ describe('Accessibility Tests', () => {
         });
     });
 
-    it('should have form labels', () => {
-        cy.get('form').should('exist');
+    it('should have accessible interactive elements', () => {
+        cy.get('button[aria-label]').should('have.length.greaterThan', 0);
     });
 });

@@ -1,5 +1,6 @@
 describe('Dashboard Page', () => {
     beforeEach(() => {
+        cy.login();
         cy.visit('/');
     });
 
