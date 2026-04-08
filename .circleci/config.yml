@@ -14,16 +14,19 @@ jobs:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
       - run:
+          name: Install pnpm
+          command: npm install -g pnpm
+      - run:
           name: Remove node_modules if exists
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci --force
+          command: pnpm install --frozen-lockfile
       - persist_to_workspace:
           root: .
           paths:
             - package.json
-            - package-lock.json
+            - pnpm-lock.yaml
             - tsconfig.json
             - vitest.config.ts
             - vitest.setup.ts
@@ -42,14 +45,17 @@ jobs:
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
+      - run:
+          name: Install pnpm
+          command: npm install -g pnpm
       - attach_workspace:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --force
+          command: pnpm install --frozen-lockfile
       - run:
           name: Run unit tests with Vitest
-          command: npm run test -- --run
+          command: pnpm test -- --run
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -64,14 +70,17 @@ jobs:
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
+      - run:
+          name: Install pnpm
+          command: npm install -g pnpm
       - attach_workspace:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --force
+          command: pnpm install --frozen-lockfile
       - run:
           name: Type check with TypeScript
-          command: npx tsc --noEmit
+          command: pnpm exec tsc --noEmit
 
   build:
     executor:
@@ -82,14 +91,17 @@ jobs:
       - run:
           name: Install build dependencies
           command: sudo apt-get update && sudo apt-get install -y python3 build-essential
+      - run:
+          name: Install pnpm
+          command: npm install -g pnpm
       - attach_workspace:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --force
+          command: pnpm install --frozen-lockfile
       - run:
           name: Build Next.js application
-          command: npm run build
+          command: pnpm build
       - save_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -102,23 +114,26 @@ jobs:
       - image: cimg/node:20.12.0-browsers
     steps:
       - checkout
+      - run:
+          name: Install pnpm
+          command: npm install -g pnpm
       - attach_workspace:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci --force
+          command: pnpm install --frozen-lockfile
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Start development server
-          command: npm run dev
+          command: pnpm dev
           background: true
       - run:
           name: Wait for server to start
-          command: npx wait-on http://localhost:8080 --timeout 60000
+          command: pnpm exec wait-on http://localhost:8080 --timeout 60000
       - run:
           name: Run Cypress e2e tests
-          command: npm run cypress:run
+          command: pnpm cypress:run
       - store_artifacts:
           path: cypress/screenshots
       - store_artifacts:
