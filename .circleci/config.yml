@@ -28,7 +28,7 @@ jobs:
             - package.json
             - pnpm-lock.yaml
             - tsconfig.json
-            - vitest.config.ts
+            - vitest.config.mts
             - vitest.setup.ts
             - cypress.config.ts
             - app/
