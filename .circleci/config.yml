@@ -18,7 +18,7 @@ jobs:
           command: rm -rf node_modules
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm ci --force
       - persist_to_workspace:
           root: .
           paths:
@@ -46,7 +46,7 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm ci --force
       - run:
           name: Run unit tests with Vitest
           command: npm run test -- --run
@@ -68,7 +68,7 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm ci --force
       - run:
           name: Type check with TypeScript
           command: npx tsc --noEmit
@@ -86,7 +86,7 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm ci --force
       - run:
           name: Build Next.js application
           command: npm run build
@@ -106,7 +106,7 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm ci --force
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
