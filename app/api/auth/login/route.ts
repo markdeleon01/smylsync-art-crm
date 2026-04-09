@@ -18,43 +18,65 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const sql = neon(process.env.POSTGRES_URL!);
-    const rows = await sql`
-    SELECT id, email, name, role, password FROM users WHERE email = ${email} LIMIT 1
-  `;
-
-    const user = rows[0];
-
-    if (!user || !user.password) {
+    if (!process.env.POSTGRES_URL) {
+        console.error('POSTGRES_URL environment variable is not set');
         return Response.json(
-            { error: 'Invalid email or password.' },
-            { status: 401 }
+            { error: 'Server configuration error.' },
+            { status: 500 }
         );
     }
 
-    const passwordMatch = await bcrypt.compare(password + PEPPER, user.password);
+    try {
+        const sql = neon(process.env.POSTGRES_URL);
+        const rows = await sql`
+      SELECT id, email, name, role, password FROM users WHERE email = ${email} LIMIT 1
+    `;
 
-    if (!passwordMatch) {
-        return Response.json(
-            { error: 'Invalid email or password.' },
-            { status: 401 }
-        );
-    }
+        const user = rows[0];
 
-    const token = await new SignJWT({
-        sub: String(user.id),
-        email: user.email,
-        name: user.name,
-        role: user.role
-    })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('8h')
-        .sign(JWT_SECRET);
-
-    return Response.json({ token }, {
-        headers: {
-            'Set-Cookie': `token=${token}; HttpOnly; Path=/; Max-Age=${8 * 60 * 60}; SameSite=Lax; Secure`
+        if (!user || !user.password) {
+            return Response.json(
+                { error: 'Invalid email or password.' },
+                { status: 401 }
+            );
         }
-    });
+
+        const passwordMatch = await bcrypt.compare(
+            password + PEPPER,
+            user.password
+        );
+
+        if (!passwordMatch) {
+            return Response.json(
+                { error: 'Invalid email or password.' },
+                { status: 401 }
+            );
+        }
+
+        const token = await new SignJWT({
+            sub: String(user.id),
+            email: user.email,
+            name: user.name,
+            role: user.role
+        })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('8h')
+            .sign(JWT_SECRET);
+
+        return Response.json(
+            { token },
+            {
+                headers: {
+                    'Set-Cookie': `token=${token}; HttpOnly; Path=/; Max-Age=${8 * 60 * 60}; SameSite=Lax; Secure`
+                }
+            }
+        );
+    } catch (err) {
+        console.error('Login error:', err);
+        return Response.json(
+            { error: 'An unexpected error occurred. Please try again.' },
+            { status: 500 }
+        );
+    }
 }

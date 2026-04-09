@@ -123,6 +123,9 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@netlify/plugin-nextjs':
+        specifier: ^5.15.9
+        version: 5.15.9
       '@testing-library/cypress':
         specifier: ^10.1.0
         version: 10.1.0(cypress@15.12.0)
@@ -1043,6 +1046,10 @@ packages:
 
   '@neondatabase/serverless@0.9.5':
     resolution: {integrity: sha512-siFas6gItqv6wD/pZnvdu34wEqgG3nSE6zWZdq5j2DEsa+VvX8i/5HXJOo06qrw5axPXn+lGCxeR+NLaSPIXug==}
+
+  '@netlify/plugin-nextjs@5.15.9':
+    resolution: {integrity: sha512-4kJvV+wrt4/ncehfaOXfhv1FYKCv9EFjq6/tgXXYSlqPDcbsuTXR0DTz9IvyZ/CpPRadRD/zzIqD9wXgCmA2lg==}
+    engines: {node: '>=18.0.0'}
 
   '@next/env@16.2.2':
     resolution: {integrity: sha512-LqSGz5+xGk9EL/iBDr2yo/CgNQV6cFsNhRR2xhSXYh7B/hb4nePCxlmDvGEKG30NMHDFf0raqSyOZiQrO7BkHQ==}
@@ -4502,6 +4509,8 @@ snapshots:
   '@neondatabase/serverless@0.9.5':
     dependencies:
       '@types/pg': 8.11.6
+
+  '@netlify/plugin-nextjs@5.15.9': {}
 
   '@next/env@16.2.2': {}
 

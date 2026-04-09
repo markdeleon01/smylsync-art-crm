@@ -66,6 +66,7 @@
     "@types/react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.9",
     "@testing-library/cypress": "^10.1.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
