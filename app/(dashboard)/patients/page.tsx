@@ -9,7 +9,12 @@ import { Fragment } from 'react/jsx-runtime';
 import { getAllPatients } from '@/lib/services/patients';
 
 export default async function PatientsPage() {
-  const patients = await getAllPatients();
+  let patients: Awaited<ReturnType<typeof getAllPatients>> = [];
+  try {
+    patients = await getAllPatients();
+  } catch {
+    patients = [];
+  }
 
   return (
     <Fragment>
