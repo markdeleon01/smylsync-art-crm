@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { SignOutButton } from './sign-out-button';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? 'fallback-secret'
@@ -56,12 +57,8 @@ export async function User() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <form action="/api/auth/logout" method="POST">
-                <button type="submit" className="w-full text-left">
-                  Sign Out
-                </button>
-              </form>
+            <DropdownMenuItem>
+              <SignOutButton />
             </DropdownMenuItem>
           </>
         ) : (
