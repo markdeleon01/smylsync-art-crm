@@ -2,16 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import PatientsPage from './page';
 
-// Mock the patients service
+// Mock the patients and appointments services
 vi.mock('@/lib/services/patients', () => ({
   getAllPatients: vi.fn()
 }));
+vi.mock('@/lib/services/appointments', () => ({
+  getUpcomingScheduledAppointments: vi.fn()
+}));
 
 import { getAllPatients } from '@/lib/services/patients';
+import { getUpcomingScheduledAppointments } from '@/lib/services/appointments';
 
 describe('Patients Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (getUpcomingScheduledAppointments as any).mockResolvedValue([]);
   });
 
   it('should render patients page', async () => {
@@ -38,7 +43,7 @@ describe('Patients Page', () => {
     const result = await PatientsPage();
     const { container } = render(result as any);
 
-    expect(container.textContent).toContain('View all patients.');
+    expect(container.textContent).toContain('Browse all patient records');
   });
 
   it('should render patient cards when patients exist', async () => {

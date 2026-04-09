@@ -1,19 +1,35 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
 import { Fragment } from 'react/jsx-runtime';
 import { getAllPatients } from '@/lib/services/patients';
+import { getUpcomingScheduledAppointments } from '@/lib/services/appointments';
+import { PatientsList, type PatientRow, type ApptRow } from './patients-list';
 
 export default async function PatientsPage() {
-  let patients: Awaited<ReturnType<typeof getAllPatients>> = [];
+  let patients: PatientRow[] = [];
+  let appointments: ApptRow[] = [];
+
   try {
-    patients = await getAllPatients();
+    const [rawPatients, rawAppts] = await Promise.all([
+      getAllPatients(),
+      getUpcomingScheduledAppointments()
+    ]);
+    patients = rawPatients.map((p) => ({
+      id: p.id as string,
+      firstname: p.firstname as string,
+      lastname: p.lastname as string,
+      email: p.email as string
+    }));
+    appointments = rawAppts.map((a) => ({
+      id: a.id as string,
+      patient_id: a.patient_id as string,
+      appointment_type: a.appointment_type as string,
+      start_time: a.start_time as string,
+      end_time: a.end_time as string,
+      status: a.status as string,
+      notes: (a.notes as string | null) ?? null
+    }));
   } catch {
     patients = [];
+    appointments = [];
   }
 
   return (
@@ -21,52 +37,13 @@ export default async function PatientsPage() {
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
-          <p className="text-gray-600">View all patients.</p>
+          <p className="text-gray-600">
+            Browse all patient records. Ask ART to add, update, or remove a
+            patient, or to look up a patient by name, email, or ID.
+          </p>
         </div>
 
-        {patients && patients.length > 0 ? (
-          <div className="space-y-4">
-            {patients.map((patient) => (
-              <Card
-                key={patient.id}
-                className="shadow-md hover:shadow-lg transition-shadow"
-              >
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        ID
-                      </p>
-                      <p className="text-lg font-medium text-gray-900">
-                        {patient.id}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        Name
-                      </p>
-                      <p className="text-lg font-medium text-gray-900">
-                        {patient.firstname} {patient.lastname}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        Email
-                      </p>
-                      <p className="text-lg font-medium text-gray-900 break-all">
-                        {patient.email}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No patients found.</p>
-          </div>
-        )}
+        <PatientsList patients={patients} appointments={appointments} />
       </div>
     </Fragment>
   );

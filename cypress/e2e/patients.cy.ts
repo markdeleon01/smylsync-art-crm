@@ -13,7 +13,7 @@ describe('Patients Page', () => {
     });
 
     it('should display description', () => {
-        cy.contains('View all patients.').should('be.visible');
+        cy.contains('Browse all patient records').should('be.visible');
     });
 
     it('should have a structured layout', () => {

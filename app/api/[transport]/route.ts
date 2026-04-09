@@ -4,6 +4,8 @@ import { z } from "zod";
 import { NextRequest } from "next/server";
 
 import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById, deletePatientByLastName, deletePatientByFirstName, deletePatientByEmail } from "@/lib/services/patients";
+import { getAllAppointments, getAppointmentById, getAppointmentsByPatientId, getAppointmentsOnDate, bookAppointment, rebookAppointment, cancelAppointment, completeAppointment, getAvailableSlots, autofillSchedule } from "@/lib/services/appointments";
+import { APPOINTMENT_TYPES } from "@/lib/types";
 
 // Define schemas outside to help with type inference
 const patientIdSchema = z.object({ id: z.string() });
@@ -15,8 +17,37 @@ const updateLastNameSchema = z.object({ id: z.string(), lastname: z.string().max
 const updateEmailSchema = z.object({ id: z.string(), email: z.string().max(255) });
 const createPatientSchema = z.object({ firstname: z.string().max(255), lastname: z.string().max(255), email: z.string().max(255) });
 
+// Appointment schemas
+const appointmentIdSchema = z.object({ id: z.string() });
+const bookAppointmentSchema = z.object({
+    patient_id: z.string(),
+    start_time: z.string().describe('ISO 8601 datetime string, e.g. 2026-04-10T09:00:00Z'),
+    appointment_type: z.enum(APPOINTMENT_TYPES),
+    notes: z.string().optional()
+});
+const rebookAppointmentSchema = z.object({
+    id: z.string(),
+    new_start_time: z.string().describe('ISO 8601 datetime string for the new appointment time')
+});
+const getByPatientIdSchema = z.object({ patient_id: z.string() });
+const getAvailableSlotsSchema = z.object({
+    date: z.string().describe('Date in YYYY-MM-DD format'),
+    appointment_type: z.enum(APPOINTMENT_TYPES).optional()
+});
+const autofillSchema = z.object({
+    weeks_ahead: z.number().int().min(1).max(12).optional().describe('How many weeks ahead to look for slots (default: 4)'),
+    max_bookings: z.number().int().min(1).max(50).optional().describe('Maximum number of appointments to book (default: 20)')
+});
+const getAppointmentsByDateSchema = z.object({
+    date: z.string().describe('Date in YYYY-MM-DD format')
+});
+
 function createMcpServer() {
     const server = new McpServer({ name: "smylsync-mcp", version: "1.0.0" });
+
+    // -----------------------------------------------------------------------
+    // Patient tools
+    // -----------------------------------------------------------------------
 
     server.registerTool(
         "get_all_patients",
@@ -259,6 +290,219 @@ function createMcpServer() {
                 result = `No patient with email '${email}' was found to delete.`;
             }
             return { content: [{ type: "text", text: result }] };
+        }
+    );
+
+    // -----------------------------------------------------------------------
+    // Appointment tools
+    // -----------------------------------------------------------------------
+
+    server.registerTool(
+        "get_all_appointments",
+        {
+            title: "Get All Appointments",
+            description: "Retrieve all appointments across all patients, including patient names.",
+            annotations: { readOnlyHint: true }
+        },
+        async () => {
+            const appointments = await getAllAppointments();
+            if (appointments.length === 0) {
+                return { content: [{ type: "text", text: "No appointments found." }] };
+            }
+            let text = `${appointments.length} appointment(s) found.\n\n`;
+            for (const a of appointments) {
+                text += `Appointment ID: ${a.id}\nPatient: ${a.firstname} ${a.lastname} (${a.patient_id})\nType: ${a.appointment_type}\nStart: ${a.start_time}\nEnd: ${a.end_time}\nStatus: ${a.status}\nNotes: ${a.notes ?? 'None'}\n\n`;
+            }
+            return { content: [{ type: "text", text }] };
+        }
+    );
+
+    server.registerTool(
+        "get_appointment_by_id",
+        {
+            title: "Get Appointment by ID",
+            description: "Retrieve details of a single appointment given its ID.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: true }
+        },
+        async ({ id }: { id: string }) => {
+            const a = await getAppointmentById(id);
+            if (!a) return { content: [{ type: "text", text: `No appointment with id '${id}' was found.` }] };
+            const text = `Appointment ID: ${a.id}\nPatient: ${a.firstname} ${a.lastname} (${a.patient_id})\nType: ${a.appointment_type}\nStart: ${a.start_time}\nEnd: ${a.end_time}\nStatus: ${a.status}\nNotes: ${a.notes ?? 'None'}`;
+            return { content: [{ type: "text", text }] };
+        }
+    );
+
+    server.registerTool(
+        "get_appointments_by_patient",
+        {
+            title: "Get Appointments by Patient ID",
+            description: "Retrieve all appointments for a specific patient given their patient ID.",
+            inputSchema: getByPatientIdSchema,
+            annotations: { readOnlyHint: true }
+        },
+        async ({ patient_id }: { patient_id: string }) => {
+            const appointments = await getAppointmentsByPatientId(patient_id);
+            if (appointments.length === 0) {
+                return { content: [{ type: "text", text: `No appointments found for patient '${patient_id}'.` }] };
+            }
+            let text = `${appointments.length} appointment(s) for patient '${patient_id}'.\n\n`;
+            for (const a of appointments) {
+                text += `ID: ${a.id} | Type: ${a.appointment_type} | Start: ${a.start_time} | Status: ${a.status}\n`;
+            }
+            return { content: [{ type: "text", text }] };
+        }
+    );
+
+    server.registerTool(
+        "get_appointments_by_date",
+        {
+            title: "Get Appointments by Date",
+            description: "Retrieve all appointments scheduled on a specific date (YYYY-MM-DD).",
+            inputSchema: getAppointmentsByDateSchema,
+            annotations: { readOnlyHint: true }
+        },
+        async ({ date }: { date: string }) => {
+            const appointments = await getAppointmentsOnDate(date);
+            if (appointments.length === 0) {
+                return { content: [{ type: "text", text: `No appointments found on ${date}.` }] };
+            }
+            let text = `${appointments.length} appointment(s) on ${date}.\n\n`;
+            for (const a of appointments) {
+                text += `ID: ${a.id} | Patient: ${a.firstname} ${a.lastname} | Type: ${a.appointment_type} | Start: ${a.start_time} | Status: ${a.status}\n`;
+            }
+            return { content: [{ type: "text", text }] };
+        }
+    );
+
+    server.registerTool(
+        "get_available_slots",
+        {
+            title: "Get Available Time Slots",
+            description: "Return all open 30-minute time slots on a given date for a specified appointment type. Use this before booking to find valid start times.",
+            inputSchema: getAvailableSlotsSchema,
+            annotations: { readOnlyHint: true }
+        },
+        async ({ date, appointment_type }: { date: string; appointment_type?: typeof APPOINTMENT_TYPES[number] }) => {
+            const slots = await getAvailableSlots(date, appointment_type ?? 'checkup');
+            if (slots.length === 0) {
+                return { content: [{ type: "text", text: `No available slots on ${date} for a '${appointment_type ?? 'checkup'}' appointment.` }] };
+            }
+            const formatted = slots.map(s => new Date(s).toISOString()).join('\n');
+            return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found):\n${formatted}` }] };
+        }
+    );
+
+    server.registerTool(
+        "book_appointment",
+        {
+            title: "Book Appointment",
+            description: "Book a dental appointment for a patient. IMPORTANT: You must use get_all_patients, get_patient_by_email, or get_patients_by_lastname FIRST to retrieve the exact patient_id (e.g. 'patient-001') before calling this tool. Do NOT guess or fabricate the patient_id. Use get_available_slots to find a valid start_time. Ask for confirmation before booking.",
+            inputSchema: bookAppointmentSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+        },
+        async ({ patient_id, start_time, appointment_type, notes }: { patient_id: string; start_time: string; appointment_type: typeof APPOINTMENT_TYPES[number]; notes?: string }) => {
+            try {
+                // Pre-validate: confirm the patient actually exists before attempting the insert
+                const patient = await getPatientById(patient_id);
+                if (!patient) {
+                    return {
+                        content: [{ type: "text", text: `Cannot book appointment: no patient found with id '${patient_id}'. Use get_all_patients, get_patient_by_email, or get_patients_by_lastname to find the correct patient_id, then try again.` }],
+                        isError: true
+                    };
+                }
+
+                const appt = await bookAppointment(patient_id, start_time, appointment_type, notes);
+                const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${appt.start_time}\nEnd: ${appt.end_time}\nStatus: ${appt.status}`;
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to book appointment: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "rebook_appointment",
+        {
+            title: "Rebook Appointment",
+            description: "Move an existing appointment to a new date and time. The appointment type and duration are preserved. Ask for confirmation before rebooking.",
+            inputSchema: rebookAppointmentSchema,
+            annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true }
+        },
+        async ({ id, new_start_time }: { id: string; new_start_time: string }) => {
+            try {
+                const appt = await rebookAppointment(id, new_start_time);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
+                const text = `Appointment rebooked successfully.\nID: ${appt.id}\nNew Start: ${appt.start_time}\nNew End: ${appt.end_time}\nStatus: ${appt.status}`;
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to rebook appointment: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "cancel_appointment",
+        {
+            title: "Cancel Appointment",
+            description: "Cancel an existing appointment by ID. The slot is freed for other patients. Ask for confirmation before cancelling.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true }
+        },
+        async ({ id }: { id: string }) => {
+            try {
+                const appt = await cancelAppointment(id);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
+                return { content: [{ type: "text", text: `Appointment '${id}' has been cancelled.` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to cancel appointment: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "complete_appointment",
+        {
+            title: "Mark Appointment as Completed",
+            description: "Mark an appointment as completed. This also updates the patient's last visit date, which is used for recall scheduling.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+        },
+        async ({ id }: { id: string }) => {
+            try {
+                const appt = await completeAppointment(id);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
+                return { content: [{ type: "text", text: `Appointment '${id}' marked as completed. Patient's last visit date has been updated.` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to complete appointment: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "autofill_schedule",
+        {
+            title: "Auto-fill Schedule",
+            description: "Automatically book overdue or never-seen patients into the earliest available slots over the coming weeks, packing appointments from the start of each day to minimise gaps. Ask for confirmation before running.",
+            inputSchema: autofillSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+        },
+        async ({ weeks_ahead, max_bookings }: { weeks_ahead?: number; max_bookings?: number }) => {
+            try {
+                const result = await autofillSchedule(weeks_ahead ?? 4, max_bookings ?? 20);
+                let text = result.message + '\n\n';
+                for (const b of result.booked) {
+                    text += `• ${b.patientName} → ${new Date(b.scheduledAt).toLocaleString()} (appt ID: ${b.appointmentId})\n`;
+                }
+                return { content: [{ type: "text", text: text.trim() }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to autofill schedule: ${msg}` }], isError: true };
+            }
         }
     );
 

@@ -113,11 +113,14 @@ export default function ArtBot() {
     }
   }, [isLoading, isOpen]);
 
-  // Reload page after tool execution completes
+  // Reload page after tool execution completes, and notify other components
   useEffect(() => {
     if (!isLoading && toolsExecuted && messages.length > 0) {
       // Ensure messages are saved before reload
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+
+      // Notify same-page components (e.g. calendar) to refresh immediately
+      window.dispatchEvent(new CustomEvent('art:tools-executed'));
 
       const reloadTimer = setTimeout(() => {
         window.location.reload();
