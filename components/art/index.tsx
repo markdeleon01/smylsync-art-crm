@@ -155,7 +155,10 @@ export default function ArtBot() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+    <div
+      className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3"
+      data-hydrated={isHydrated ? 'true' : undefined}
+    >
       {/* Chat Window - only render after hydration */}
       {isHydrated && isOpen && (
         <div
