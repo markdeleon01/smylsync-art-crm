@@ -12,6 +12,11 @@ import { createOpenAI } from '@ai-sdk/openai';
 export async function POST(req: Request) {
     const { message, history = [] }: { message: string; history: { role: 'user' | 'assistant'; content: string }[] } = await req.json();
 
+    if (!process.env.OPENAI_API_KEY) {
+        console.error('OPENAI_API_KEY environment variable is not set');
+        return Response.json({ error: 'Server configuration error.' }, { status: 500 });
+    }
+
     // Derive the MCP URL from the incoming request so it works in any environment
     // (local, Vercel, Netlify, etc.) without needing MCP_URL set.
     const { origin } = new URL(req.url);
@@ -178,6 +183,8 @@ export async function POST(req: Request) {
         return response.toTextStreamResponse();
 
     } catch (error) {
-        return new Response('Internal Server Error', { status: 500 });
+        console.error('ART API error:', error);
+        const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+        return Response.json({ error: message }, { status: 500 });
     }
 }

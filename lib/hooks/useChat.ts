@@ -66,7 +66,14 @@ export function useChat(options?: UseChatOptions) {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API error: ${response.statusText}`);
+                    let errorMessage = `Request failed (${response.status})`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData?.error) errorMessage = errorData.error;
+                    } catch {
+                        // response wasn't JSON — use the status-based fallback above
+                    }
+                    throw new Error(errorMessage);
                 }
 
                 if (!response.body) {
