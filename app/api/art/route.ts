@@ -12,6 +12,11 @@ import { createOpenAI } from '@ai-sdk/openai';
 export async function POST(req: Request) {
     const { message, history = [] }: { message: string; history: { role: 'user' | 'assistant'; content: string }[] } = await req.json();
 
+    // Derive the MCP URL from the incoming request so it works in any environment
+    // (local, Vercel, Netlify, etc.) without needing MCP_URL set.
+    const { origin } = new URL(req.url);
+    const mcpUrl = process.env.MCP_URL ?? `${origin}/api/mcp`;
+
     const openai = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY
     });
@@ -33,7 +38,7 @@ export async function POST(req: Request) {
         const httpClient = await createMCPClient({
             transport: {
                 type: 'http',
-                url: process.env.MCP_URL ?? '/api/mcp',
+                url: mcpUrl,
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },

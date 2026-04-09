@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless';
 
 export const getAllPatients = async () => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`SELECT * FROM patients;`;
     //console.log('getAllPatients=', data);
     return data;
@@ -11,7 +11,7 @@ export const getAllPatients = async () => {
 
 export const getPatientById = async (id: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`SELECT * FROM patients WHERE id = ${id};`;
     //console.log('getPatientById=', data);
     return data[0];
@@ -19,7 +19,7 @@ export const getPatientById = async (id: string) => {
 
 export const createPatient = async (firstname: string, lastname: string, email: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     //console.log('Creating patient with:', { firstname, lastname, email });
     const id = crypto.randomUUID();
     const data = await sql`INSERT INTO patients (id, firstname, lastname, email) VALUES (${id}, ${firstname}, ${lastname}, ${email}) RETURNING *;`;
@@ -29,7 +29,7 @@ export const createPatient = async (firstname: string, lastname: string, email: 
 
 export const deletePatientById = async (id: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`DELETE FROM patients WHERE id = ${id} RETURNING *;`;
     //console.log('deletePatientById=', data);
     return data[0];
@@ -37,7 +37,7 @@ export const deletePatientById = async (id: string) => {
 
 export const getPatientsByLastName = async (lastname: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`SELECT * FROM patients WHERE lastname = ${lastname};`;
     //console.log('getPatientsByLastName=', data);
     return data;
@@ -45,7 +45,7 @@ export const getPatientsByLastName = async (lastname: string) => {
 
 export const getPatientsByFirstName = async (firstname: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`SELECT * FROM patients WHERE firstname = ${firstname};`;
     //console.log('getPatientsByFirstName=', data);
     return data;
@@ -53,7 +53,7 @@ export const getPatientsByFirstName = async (firstname: string) => {
 
 export const getPatientByEmail = async (email: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`SELECT * FROM patients WHERE email = ${email};`;
     //console.log('getPatientByEmail=', data);
     return data[0];
@@ -61,7 +61,7 @@ export const getPatientByEmail = async (email: string) => {
 
 export const updatePatientFirstName = async (id: string, firstname: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`UPDATE patients SET firstname = ${firstname} WHERE id = ${id} RETURNING *;`;
     //console.log('updatePatientFirstName=', data);
     return data[0];
@@ -69,7 +69,7 @@ export const updatePatientFirstName = async (id: string, firstname: string) => {
 
 export const updatePatientLastName = async (id: string, lastname: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`UPDATE patients SET lastname = ${lastname} WHERE id = ${id} RETURNING *;`;
     //console.log('updatePatientLastName=', data);
     return data[0];
@@ -77,7 +77,7 @@ export const updatePatientLastName = async (id: string, lastname: string) => {
 
 export const updatePatientEmail = async (id: string, email: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`UPDATE patients SET email = ${email} WHERE id = ${id} RETURNING *;`;
     //console.log('updatePatientEmail=', data);
     return data[0];
@@ -85,7 +85,7 @@ export const updatePatientEmail = async (id: string, email: string) => {
 
 export const deletePatientByLastName = async (lastname: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`DELETE FROM patients WHERE lastname = ${lastname} RETURNING *;`;
     //console.log('deletePatientByLastName=', data);
     return data;
@@ -93,7 +93,7 @@ export const deletePatientByLastName = async (lastname: string) => {
 
 export const deletePatientByFirstName = async (firstname: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`DELETE FROM patients WHERE firstname = ${firstname} RETURNING *;`;
     //console.log('deletePatientByFirstName=', data);
     return data;
@@ -101,7 +101,7 @@ export const deletePatientByFirstName = async (firstname: string) => {
 
 export const deletePatientByEmail = async (email: string) => {
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`DELETE FROM patients WHERE email = ${email} RETURNING *;`;
     //console.log('deletePatientByEmail=', data);
     return data[0];
