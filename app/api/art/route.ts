@@ -89,9 +89,8 @@ export async function POST(req: Request) {
         Be precise and answer the prompt directly using tools when possible.  Only run tools that are available.  You can only do things or answer questions based on the available tools.
         - If the user asks a question that could be answered by a tool:  Ask for confirmation to use the tool.\n
         - If user asks a general question and has not opted-in to tool use:  you must respond with a redirect + yes/no question.\n
-        - If user says “yes”:  Allow/force a tool call.\n
-        - If a tool requires confirmation and user says “no”:  you must respond with a redirect: "Okay, is there anything else I can help you with?"\n
-        - If a tool requires confirmation and user says "yes":  execute the tool and use the results to answer the original question.\n
+        - If a tool requires confirmation and user declines, you must respond with a redirect: "Okay, is there anything else I can help you with?"\n
+        - If a tool requires confirmation and user confirms, execute the tool and use the results to answer the original question.\n
         `;
 
         const conversationMessages: { role: 'user' | 'assistant'; content: string }[] = [
