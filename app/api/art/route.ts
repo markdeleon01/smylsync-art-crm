@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         const httpClient = await createMCPClient({
             transport: {
                 type: 'http',
-                url: process.env.MCP_URL ?? 'http://localhost:3001/mcp',
+                url: process.env.MCP_URL ?? '/api/mcp',
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const sseClient = await createMCPClient({
             transport: {
                 type: 'sse',
-                url: process.env.SSE_URL ?? 'http://localhost:3001/sse',
+                url: process.env.SSE_URL ?? '/api/sse',
 
                 // optional: configure headers
                 // headers: { Authorization: 'Bearer my-api-key' },
@@ -78,7 +78,6 @@ export async function POST(req: Request) {
         const systemPrompt = `Your name is ART, SMYLSYNC's internal operations agent capable of running tools.  Use the available tools to answer the prompt.  
         Be precise and answer the prompt directly using tools when possible.  Only run tools that are available.  You can only do things or answer questions based on the available tools.
         - If the user asks a question that could be answered by a tool:  Ask for confirmation to use the tool.\n
-        - If no tool can answer, you must respond with this redirect: "I can’t answer that directly, and I don’t have a tool that can retrieve that information."\n
         - If user asks a general question and has not opted-in to tool use:  you must respond with a redirect + yes/no question.\n
         - If user says “yes”:  Allow/force a tool call.\n
         - If a tool requires confirmation and user says “no”:  you must respond with a redirect: "Okay, is there anything else I can help you with?"\n
