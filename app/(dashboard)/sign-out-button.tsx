@@ -32,12 +32,14 @@ export function SignOutButton() {
     `;
     document.body.appendChild(overlay);
 
-    await Promise.all([
-      fetch('/api/auth/logout', { method: 'POST' }),
-      new Promise((resolve) => setTimeout(resolve, 1000))
-    ]);
-
-    window.location.href = '/login';
+    try {
+      await Promise.all([
+        fetch('/api/auth/logout', { method: 'POST' }),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } finally {
+      window.location.href = '/login';
+    }
   };
 
   return (
