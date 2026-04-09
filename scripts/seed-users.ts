@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS ?? '12', 10);
 const PEPPER = process.env.BCRYPT_PEPPER ?? '';
