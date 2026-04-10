@@ -348,9 +348,13 @@ describe('getAvailableSlots', () => {
     });
 
     it('removes slots that conflict with an existing appointment', async () => {
-        // A 60-min cleaning at 09:00 blocks 09:00 and 09:30 slots
+        // A 60-min appointment at 09:00 local time blocks the 09:00 and 09:30 slots.
+        // Use setHours() (local time) to match what generateDaySlots produces.
+        const apptStart = new Date('2026-05-05');
+        apptStart.setHours(9, 0, 0, 0);
+        const apptEnd = new Date(apptStart.getTime() + 60 * 60 * 1000);
         mockSql.mockResolvedValueOnce([
-            { start_time: '2026-05-05T01:00:00.000Z', end_time: '2026-05-05T02:00:00.000Z' } // 09:00–10:00 PHT (UTC+8)
+            { start_time: apptStart.toISOString(), end_time: apptEnd.toISOString() }
         ]);
         const slots = await getAvailableSlots('2026-05-05', 'checkup');
         // 18 total minus 2 blocked = 16
@@ -358,18 +362,18 @@ describe('getAvailableSlots', () => {
     });
 
     it('returns empty array when the day is fully booked', async () => {
-        // Fill every 30-min slot from 08:00–17:00
+        // Fill every 30-min slot from 08:00–17:00 using local time (same as generateDaySlots)
         const existing = Array.from({ length: 18 }, (_, i) => {
             const startH = 8 + Math.floor(i / 2);
             const startM = (i % 2) * 30;
-            const start = new Date(`2026-05-05T00:00:00.000Z`);
-            start.setUTCHours(startH - 8, startM); // adjust for mock timezone-agnostic test
+            const start = new Date('2026-05-05');
+            start.setHours(startH, startM, 0, 0);
             const end = new Date(start.getTime() + 30 * 60000);
             return { start_time: start.toISOString(), end_time: end.toISOString() };
         });
         mockSql.mockResolvedValueOnce(existing);
         const slots = await getAvailableSlots('2026-05-05', 'checkup');
-        expect(slots.length).toBeLessThanOrEqual(18);
+        expect(slots.length).toBe(0);
     });
 
     it('removes slots too short for a long appointment type', async () => {
