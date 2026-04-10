@@ -179,8 +179,8 @@ export function PatientsList({ patients, appointments }: Props) {
 
   return (
     <>
-      {/* Heading row with search bar */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      {/* Heading and controls */}
+      <div className="mb-6 space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
           <p className="text-gray-600">
@@ -188,9 +188,9 @@ export function PatientsList({ patients, appointments }: Props) {
             patient, or to look up a patient by name, email, or ID.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2 shrink-0">
+        <div className="flex flex-col gap-2 sm:items-end">
           <form
-            className="flex gap-2"
+            className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
             onSubmit={(e) => {
               e.preventDefault();
               setQuery(inputValue);
@@ -204,17 +204,17 @@ export function PatientsList({ patients, appointments }: Props) {
                 if (e.target.value === '') setQuery('');
               }}
               placeholder="Search by ID, name, email, or phone…"
-              className="w-[274px] rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-[274px]"
               aria-label="Search patients"
             />
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-700 sm:w-auto"
             >
               Search
             </button>
           </form>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
             <label
               htmlFor="sort-order"
               className="text-sm text-gray-600 shrink-0"
@@ -225,7 +225,7 @@ export function PatientsList({ patients, appointments }: Props) {
               id="sort-order"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-auto"
               aria-label="Sort patients"
             >
               <option value="asc">Last name – A to Z</option>
@@ -245,8 +245,8 @@ export function PatientsList({ patients, appointments }: Props) {
                 className="shadow-md hover:shadow-lg transition-shadow"
               >
                 <CardContent className="pt-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-3 flex-1 min-w-0">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                           ID
@@ -255,61 +255,64 @@ export function PatientsList({ patients, appointments }: Props) {
                           {patient.id}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                          Name
-                        </p>
-                        <p className="text-lg font-medium text-gray-900">
-                          {patient.lastname}, {patient.firstname}
-                        </p>
+
+                      {/* Upcoming appointment badges */}
+                      <div className="flex flex-wrap gap-1.5 justify-end shrink-0 pt-1 max-w-[70%]">
+                        {appts.length === 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded border border-gray-300 bg-gray-100 text-gray-500 text-xs font-medium whitespace-nowrap">
+                            No upcoming appointments
+                          </span>
+                        ) : (
+                          appts.map((appt) => {
+                            const colorCls =
+                              TYPE_COLORS[appt.appointment_type] ??
+                              'bg-gray-100 border-gray-400 text-gray-800';
+                            return (
+                              <button
+                                key={appt.id}
+                                onClick={(e) => handleBadgeClick(e, appt)}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium whitespace-nowrap cursor-pointer hover:brightness-95 transition-all ${colorCls} ${selected?.id === appt.id ? 'ring-2 ring-offset-1 ring-gray-600' : ''}`}
+                              >
+                                {formatType(appt.appointment_type)}
+                                <span className="opacity-70">
+                                  · {formatDate(appt.start_time)}{' '}
+                                  {formatTime(appt.start_time)}
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                          Email
-                        </p>
-                        <p className="text-lg font-medium text-gray-900 break-all">
-                          {patient.email}
-                        </p>
-                      </div>
-                      {patient.phone && (
-                        <div>
-                          <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                            Phone
-                          </p>
-                          <p className="text-lg font-medium text-gray-900">
-                            {patient.phone}
-                          </p>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Upcoming appointment badges */}
-                    <div className="flex flex-col gap-1.5 items-end shrink-0 pt-1">
-                      {appts.length === 0 ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded border border-gray-300 bg-gray-100 text-gray-500 text-xs font-medium whitespace-nowrap">
-                          No upcoming appointments
-                        </span>
-                      ) : (
-                        appts.map((appt) => {
-                          const colorCls =
-                            TYPE_COLORS[appt.appointment_type] ??
-                            'bg-gray-100 border-gray-400 text-gray-800';
-                          return (
-                            <button
-                              key={appt.id}
-                              onClick={(e) => handleBadgeClick(e, appt)}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium whitespace-nowrap cursor-pointer hover:brightness-95 transition-all ${colorCls} ${selected?.id === appt.id ? 'ring-2 ring-offset-1 ring-gray-600' : ''}`}
-                            >
-                              {formatType(appt.appointment_type)}
-                              <span className="opacity-70">
-                                · {formatDate(appt.start_time)}{' '}
-                                {formatTime(appt.start_time)}
-                              </span>
-                            </button>
-                          );
-                        })
-                      )}
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        Name
+                      </p>
+                      <p className="text-lg font-medium text-gray-900">
+                        {patient.lastname}, {patient.firstname}
+                      </p>
                     </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        Email
+                      </p>
+                      <p className="text-lg font-medium text-gray-900 break-all">
+                        {patient.email}
+                      </p>
+                    </div>
+
+                    {patient.phone && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                          Phone
+                        </p>
+                        <p className="text-lg font-medium text-gray-900">
+                          {patient.phone}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
