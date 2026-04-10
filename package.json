@@ -9,7 +9,7 @@
     "migrate:ci": "tsx scripts/migrate.ts",
     "seed:users": "tsx --env-file=.env scripts/seed-users.ts",
     "seed:users:ci": "tsx scripts/seed-users.ts",
-    "deploy": "npm run migrate && npm run build && npm run seed:users",
+    "deploy": "npm run migrate && npm run seed:users",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
