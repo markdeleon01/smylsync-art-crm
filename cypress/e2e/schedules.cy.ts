@@ -16,27 +16,32 @@ describe('Schedules Page', () => {
         cy.contains('View and manage dental appointments').should('be.visible');
     });
 
-    it('renders the weekly calendar grid', () => {
-        // The calendar renders day-name headers
-        cy.contains('Monday').should('be.visible');
-        cy.contains('Friday').should('be.visible');
+    it('renders the weekly calendar grid by default', () => {
+        cy.contains('Sunday').should('be.visible');
+        cy.contains('Saturday').should('be.visible');
     });
 
-    it('shows Mon–Fri column headers', () => {
-        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach((day) => {
+    it('shows all seven day column headers in week view', () => {
+        ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach((day) => {
             cy.contains(day).should('exist');
         });
     });
 
-    it('renders the time axis labels', () => {
+    it('renders the time axis starting at 8:00 AM', () => {
         cy.contains('8:00 AM').should('exist');
-        cy.contains('12:00 PM').should('exist');
-        cy.contains('4:00 PM').should('exist');
     });
 
-    it('has prev/next week navigation buttons', () => {
-        cy.get('button[aria-label="Previous week"]').should('exist');
-        cy.get('button[aria-label="Next week"]').should('exist');
+    it('renders the time axis ending at 8:00 PM', () => {
+        cy.contains('8:00 PM').should('exist');
+    });
+
+    it('renders a 12:00 PM midday label in the time axis', () => {
+        cy.contains('12:00 PM').should('exist');
+    });
+
+    it('has prev/next navigation buttons', () => {
+        cy.get('button[aria-label="Previous"]').should('exist');
+        cy.get('button[aria-label="Next"]').should('exist');
     });
 
     it('has a Today button', () => {
@@ -47,66 +52,239 @@ describe('Schedules Page', () => {
         cy.get('button[aria-label="Refresh"]').should('exist');
     });
 
-    it('renders the appointment type legend', () => {
-        cy.contains('Checkup').should('exist');
-        cy.contains('Cleaning').should('exist');
-        cy.contains('Extraction').should('exist');
+    it('renders the appointment type legend labels', () => {
+        ['Checkup', 'Cleaning', 'Extraction', 'Filling', 'Crown', 'Consultation'].forEach((type) => {
+            cy.contains(type).should('exist');
+        });
     });
 
-    it('shows a weekly appointment count in the stats bar', () => {
-        // After loading, the stats bar appears (0 or more appointments)
+    it('shows a stats bar after loading', () => {
         cy.contains(/appointment/).should('exist');
+    });
+
+    // -----------------------------------------------------------------------
+    // View toggle – Day / Week / Month
+    // -----------------------------------------------------------------------
+
+    it('has Day, Week, and Month toggle buttons', () => {
+        cy.contains('button', 'Day').should('exist');
+        cy.contains('button', 'Week').should('exist');
+        cy.contains('button', 'Month').should('exist');
+    });
+
+    it('switches to Day view when Day button is clicked', () => {
+        cy.contains('button', 'Day').click();
+        // Day view shows a single column (day name visible in header)
+        const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        cy.contains(dayName).should('be.visible');
+        // Seven-column Sunday header should no longer be a day-column header
+        cy.contains('Sunday').should('not.exist');
+    });
+
+    it('shows "No appointments scheduled for this day" when day view is empty', () => {
+        // Navigate far into the future where there are no appointments
+        cy.contains('button', 'Day').click();
+        for (let i = 0; i < 60; i++) {
+            cy.get('button[aria-label="Next"]').click();
+        }
+        cy.contains(/No appointments scheduled for this day/i).should('be.visible');
+    });
+
+    it('switches to Month view when Month button is clicked', () => {
+        cy.contains('button', 'Month').click();
+        // Month view header shows short day names (Sun Mon … Sat)
+        cy.contains('Sun').should('be.visible');
+        cy.contains('Mon').should('be.visible');
+        cy.contains('Sat').should('be.visible');
+    });
+
+    it('switches back to Week view when Week button is clicked', () => {
+        cy.contains('button', 'Month').click();
+        cy.contains('button', 'Week').click();
+        cy.contains('Sunday').should('be.visible');
+        cy.contains('Saturday').should('be.visible');
     });
 
     // -----------------------------------------------------------------------
     // Week navigation
     // -----------------------------------------------------------------------
 
-    it('navigates to the previous week when clicking the back arrow', () => {
-        // Record current month label, then go back
-        cy.get('button[aria-label="Previous week"]').click();
-        // The calendar should still show Mon–Fri headers (grid intact)
-        cy.contains('Monday').should('be.visible');
+    it('navigates to the previous week when clicking the back arrow in week view', () => {
+        cy.get('button[aria-label="Previous"]').click();
+        cy.contains('Sunday').should('be.visible');
     });
 
-    it('navigates to the next week when clicking the forward arrow', () => {
-        cy.get('button[aria-label="Next week"]').click();
-        cy.contains('Monday').should('be.visible');
+    it('navigates to the next week when clicking the forward arrow in week view', () => {
+        cy.get('button[aria-label="Next"]').click();
+        cy.contains('Sunday').should('be.visible');
     });
 
-    it('returns to the current week when clicking Today', () => {
-        // Go forward two weeks, then come back
-        cy.get('button[aria-label="Next week"]').click();
-        cy.get('button[aria-label="Next week"]').click();
+    it('shows "this week" stats label in week view', () => {
+        cy.contains('this week').should('be.visible');
+    });
+
+    // -----------------------------------------------------------------------
+    // Month navigation
+    // -----------------------------------------------------------------------
+
+    it('navigates to the previous month in month view', () => {
+        cy.contains('button', 'Month').click();
+        // Record current header label
+        cy.get('span.font-semibold').invoke('text').then((before) => {
+            cy.get('button[aria-label="Previous"]').click();
+            cy.get('span.font-semibold').invoke('text').should('not.equal', before);
+        });
+    });
+
+    it('navigates to the next month in month view', () => {
+        cy.contains('button', 'Month').click();
+        cy.get('span.font-semibold').invoke('text').then((before) => {
+            cy.get('button[aria-label="Next"]').click();
+            cy.get('span.font-semibold').invoke('text').should('not.equal', before);
+        });
+    });
+
+    it('shows "this month" stats label in month view', () => {
+        cy.contains('button', 'Month').click();
+        cy.contains('this month').should('be.visible');
+    });
+
+    // -----------------------------------------------------------------------
+    // Day navigation
+    // -----------------------------------------------------------------------
+
+    it('navigates to the previous day when clicking back in day view', () => {
+        cy.contains('button', 'Day').click();
+        cy.get('span.font-semibold').invoke('text').then((before) => {
+            cy.get('button[aria-label="Previous"]').click();
+            cy.get('span.font-semibold').invoke('text').should('not.equal', before);
+        });
+    });
+
+    it('navigates to the next day when clicking forward in day view', () => {
+        cy.contains('button', 'Day').click();
+        cy.get('span.font-semibold').invoke('text').then((before) => {
+            cy.get('button[aria-label="Next"]').click();
+            cy.get('span.font-semibold').invoke('text').should('not.equal', before);
+        });
+    });
+
+    it('shows "today" stats label in day view', () => {
+        cy.contains('button', 'Day').click();
+        cy.contains('today').should('be.visible');
+    });
+
+    // -----------------------------------------------------------------------
+    // Today button
+    // -----------------------------------------------------------------------
+
+    it('clicking Today switches to Day view showing today', () => {
+        // Navigate away first
+        cy.contains('button', 'Month').click();
+        cy.get('button[aria-label="Next"]').click();
         cy.contains('button', 'Today').click();
-        cy.contains('Monday').should('be.visible');
+        // After Today we should be in Day view
+        cy.contains('today').should('be.visible');
+    });
+
+    it('Today button navigates back from a future week to current day view', () => {
+        cy.get('button[aria-label="Next"]').click();
+        cy.get('button[aria-label="Next"]').click();
+        cy.contains('button', 'Today').click();
+        cy.contains('today').should('be.visible');
+    });
+
+    // -----------------------------------------------------------------------
+    // Appointment type filter
+    // -----------------------------------------------------------------------
+
+    it('legend buttons are clickable', () => {
+        cy.contains('Checkup').click();
+        // After clicking, all other labels should dim (opacity-30)
+        cy.contains('Cleaning').should('have.css', 'opacity', '0.3');
+    });
+
+    it('clicking an active filter label again deactivates it', () => {
+        cy.contains('Checkup').click();
+        cy.contains('Checkup').click();
+        // After double-click Cleaning should be back to full opacity
+        cy.contains('Cleaning').should('not.have.css', 'opacity', '0.3');
+    });
+
+    it('multiple type filters can be active simultaneously', () => {
+        cy.contains('Checkup').click();
+        cy.contains('Cleaning').click();
+        // Both should show the ring class (active), not be dimmed
+        cy.contains('Extraction').should('have.css', 'opacity', '0.3');
+        cy.contains('Checkup').should('not.have.css', 'opacity', '0.3');
+        cy.contains('Cleaning').should('not.have.css', 'opacity', '0.3');
+    });
+
+    it('filter state persists across view changes', () => {
+        cy.contains('Checkup').click();
+        cy.contains('button', 'Month').click();
+        // Cleaning should still be dimmed in month view
+        cy.contains('Cleaning').should('have.css', 'opacity', '0.3');
+        cy.contains('button', 'Day').click();
+        cy.contains('Cleaning').should('have.css', 'opacity', '0.3');
     });
 
     // -----------------------------------------------------------------------
     // Refresh
     // -----------------------------------------------------------------------
 
-    it('re-fetches appointments when Refresh is clicked', () => {
-        cy.intercept('POST', '/schedules').as('refresh');
+    it('re-renders calendar after Refresh is clicked in week view', () => {
         cy.get('button[aria-label="Refresh"]').click();
-        // Calendar should still render correctly after refresh
-        cy.contains('Monday').should('be.visible');
+        cy.contains('Sunday').should('be.visible');
+    });
+
+    it('re-renders calendar after Refresh is clicked in month view', () => {
+        cy.contains('button', 'Month').click();
+        cy.get('button[aria-label="Refresh"]').click();
+        cy.contains('Sun').should('be.visible');
+    });
+
+    it('re-renders calendar after Refresh is clicked in day view', () => {
+        cy.contains('button', 'Day').click();
+        cy.get('button[aria-label="Refresh"]').click();
+        cy.contains('today').should('be.visible');
     });
 
     // -----------------------------------------------------------------------
-    // Appointment detail panel (if any appointments exist)
+    // Appointment detail bubble (conditional on data)
     // -----------------------------------------------------------------------
 
-    it('shows appointment detail panel when an appointment block is clicked', () => {
-        // If there are no appointments this week the test is a no-op (skipped by Cypress naturally)
+    it('shows appointment detail bubble when an appointment block is clicked', () => {
         cy.get('body').then(($body) => {
-            // Appointment blocks are buttons inside the day columns
             const apptButtons = $body.find('[style*="position: absolute"]').filter('button');
             if (apptButtons.length > 0) {
                 cy.wrap(apptButtons.first()).click();
-                cy.contains('Appointment ID').should('be.visible');
                 cy.contains('Status').should('be.visible');
-                cy.contains('ART').should('be.visible'); // "Ask ART to rebook or cancel"
+                cy.contains(/Ask ART/i).should('be.visible');
+            }
+        });
+    });
+
+    it('closes the bubble when the close button is clicked', () => {
+        cy.get('body').then(($body) => {
+            const apptButtons = $body.find('[style*="position: absolute"]').filter('button');
+            if (apptButtons.length > 0) {
+                cy.wrap(apptButtons.first()).click();
+                cy.contains('Status').should('be.visible');
+                cy.get('button[aria-label="Close"]').first().click();
+                cy.contains('Status').should('not.exist');
+            }
+        });
+    });
+
+    it('closes the bubble when Escape is pressed', () => {
+        cy.get('body').then(($body) => {
+            const apptButtons = $body.find('[style*="position: absolute"]').filter('button');
+            if (apptButtons.length > 0) {
+                cy.wrap(apptButtons.first()).click();
+                cy.contains('Status').should('be.visible');
+                cy.get('body').type('{esc}');
+                cy.contains('Status').should('not.exist');
             }
         });
     });
@@ -123,7 +301,6 @@ describe('Schedules Page', () => {
     });
 
     it('POST /api/appointments books a new appointment and returns 200', () => {
-        // First, get a real patient id to use
         cy.request('GET', '/api/patients').then((patientsRes) => {
             const patient = patientsRes.body[0];
             expect(patient).to.exist;
@@ -142,13 +319,12 @@ describe('Schedules Page', () => {
                 },
                 failOnStatusCode: false
             }).then((res) => {
-                // Endpoint might return 200 or 201; both are acceptable
                 expect(res.status).to.be.oneOf([200, 201]);
                 expect(res.body).to.have.property('id');
                 expect(res.body.patient_id).to.eq(patient.id);
                 expect(res.body.status).to.eq('scheduled');
 
-                // ---- Clean up: delete the test appointment ----
+                // Clean up
                 const apptId = res.body.id;
                 cy.request({
                     method: 'DELETE',
@@ -170,7 +346,6 @@ describe('Schedules Page', () => {
     });
 
     it('PATCH /api/appointments/:id/cancel cancels an appointment', () => {
-        // Book a temporary appointment first, then cancel it
         cy.request('GET', '/api/patients').then((patientsRes) => {
             const patient = patientsRes.body[0];
 

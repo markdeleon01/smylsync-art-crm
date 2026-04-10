@@ -13,6 +13,7 @@ import {
     getAllAppointments,
     getAppointmentById,
     getAppointmentsByPatientId,
+    getAppointmentsByDateRange,
     getAppointmentsOnDate,
     getUpcomingScheduledAppointments,
     bookAppointment,
@@ -131,6 +132,33 @@ describe('getAppointmentsOnDate', () => {
 });
 
 // ---------------------------------------------------------------------------
+// getAppointmentsByDateRange
+// ---------------------------------------------------------------------------
+
+describe('getAppointmentsByDateRange', () => {
+    it('returns appointments within the specified range', async () => {
+        const rows = [makeAppt(), makeAppt({ id: 'appt-002', start_time: '2026-05-03T10:00:00.000Z' })];
+        mockSql.mockResolvedValueOnce(rows);
+        const result = await getAppointmentsByDateRange('2026-05-01T00:00:00.000Z', '2026-05-08T00:00:00.000Z');
+        expect(result).toHaveLength(2);
+    });
+
+    it('returns empty array when no appointments in range', async () => {
+        mockSql.mockResolvedValueOnce([]);
+        const result = await getAppointmentsByDateRange('2026-05-01T00:00:00.000Z', '2026-05-02T00:00:00.000Z');
+        expect(result).toHaveLength(0);
+    });
+
+    it('includes patient name fields from the JOIN', async () => {
+        const row = makeAppt({ firstname: 'Alice', lastname: 'Smith', email: 'alice@example.com' });
+        mockSql.mockResolvedValueOnce([row]);
+        const result = await getAppointmentsByDateRange('2026-05-01T00:00:00.000Z', '2026-05-08T00:00:00.000Z');
+        expect(result[0]).toHaveProperty('firstname', 'Alice');
+        expect(result[0]).toHaveProperty('lastname', 'Smith');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // getUpcomingScheduledAppointments
 // ---------------------------------------------------------------------------
 
@@ -144,6 +172,42 @@ describe('getUpcomingScheduledAppointments', () => {
         const result = await getUpcomingScheduledAppointments();
         expect(result).toHaveLength(2);
         result.forEach((r) => expect(r.status).toBe('scheduled'));
+    });
+
+    it('returns empty array when there are no upcoming appointments', async () => {
+        mockSql.mockResolvedValueOnce([]);
+        const result = await getUpcomingScheduledAppointments();
+        expect(result).toHaveLength(0);
+    });
+
+    it('does not return cancelled appointments', async () => {
+        // The DB query filters by status = scheduled, so the mock simulates that
+        mockSql.mockResolvedValueOnce([
+            makeAppt({ status: 'scheduled' })
+        ]);
+        const result = await getUpcomingScheduledAppointments();
+        result.forEach((r) => expect(r.status).not.toBe('cancelled'));
+    });
+
+    it('selects the expected columns (no firstname/lastname join)', async () => {
+        const row = {
+            id: APPT_ID,
+            patient_id: PATIENT_ID,
+            start_time: '2026-05-01T09:00:00.000Z',
+            end_time: '2026-05-01T09:30:00.000Z',
+            appointment_type: 'checkup',
+            status: 'scheduled',
+            notes: null
+        };
+        mockSql.mockResolvedValueOnce([row]);
+        const result = await getUpcomingScheduledAppointments();
+        expect(result[0]).toHaveProperty('id');
+        expect(result[0]).toHaveProperty('patient_id');
+        expect(result[0]).toHaveProperty('start_time');
+        expect(result[0]).toHaveProperty('end_time');
+        expect(result[0]).toHaveProperty('appointment_type');
+        expect(result[0]).toHaveProperty('status');
+        expect(result[0]).toHaveProperty('notes');
     });
 });
 

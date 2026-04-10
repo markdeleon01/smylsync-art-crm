@@ -132,13 +132,14 @@ export function PatientsList({ patients, appointments }: Props) {
       return;
     }
     const BUBBLE_W = 300;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const spaceRight = window.innerWidth - rect.right;
+    const BUBBLE_H = 420;
+    const GAP = 12;
+    const spaceRight = window.innerWidth - e.clientX;
     const left =
-      spaceRight >= BUBBLE_W + 12
-        ? rect.right + 8
-        : Math.max(8, rect.left - BUBBLE_W - 8);
-    const top = Math.max(8, Math.min(rect.top, window.innerHeight - 420));
+      spaceRight >= BUBBLE_W + GAP
+        ? e.clientX + GAP
+        : Math.max(8, e.clientX - BUBBLE_W - GAP);
+    const top = Math.max(8, Math.min(e.clientY, window.innerHeight - BUBBLE_H));
     setSelected(appt);
     setBubblePos({ left, top });
   }
@@ -187,7 +188,7 @@ export function PatientsList({ patients, appointments }: Props) {
                     <div className="flex flex-col gap-1.5 items-end shrink-0 pt-1">
                       {appts.length === 0 ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded border border-gray-300 bg-gray-100 text-gray-500 text-xs font-medium whitespace-nowrap">
-                          No appointments
+                          No upcoming appointments
                         </span>
                       ) : (
                         appts.map((appt) => {
