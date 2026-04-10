@@ -4,7 +4,8 @@ import { join } from 'path';
 
 const files = [
     join(process.cwd(), 'create_users_table.sql'),
-    join(process.cwd(), 'create_patients_table.sql')
+    join(process.cwd(), 'create_patients_table.sql'),
+    join(process.cwd(), 'create_appointments_table.sql')
 ];
 
 async function main() {

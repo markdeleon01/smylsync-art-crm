@@ -134,6 +134,19 @@ jobs:
       - restore_cache:
           key: next-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
+          name: Validate database environment
+          command: |
+            if [ -z "$POSTGRES_URL" ]; then
+              echo "POSTGRES_URL is not set. Configure it in CircleCI project env vars or context."
+              exit 1
+            fi
+      - run:
+          name: Run database migrations
+          command: pnpm run migrate:ci
+      - run:
+          name: Seed users for e2e tests
+          command: pnpm run seed:users:ci
+      - run:
           name: Start development server
           command: pnpm dev
           background: true

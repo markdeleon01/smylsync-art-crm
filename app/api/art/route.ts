@@ -1,5 +1,5 @@
 import { createMCPClient } from '@ai-sdk/mcp';
-import { streamText } from 'ai';
+import { streamText, stepCountIs } from 'ai';
 //import { Experimental_StdioMCPTransport } from '@ai-sdk/mcp/mcp-stdio';
 //import { openai } from '@ai-sdk/openai';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -99,11 +99,32 @@ export async function POST(req: Request) {
         ];
 
         // Call the gpt-5-nano (faster and cheaper) model to decide which tool(s) to call and with what arguments.
+        // stopWhen: stepCountIs(3) enables the agentic loop so the model can confirm → call tool → see result
+        // in a single request. Without this, the model can only do ONE of: generate text OR call a tool.
+        // That caused hallucinated "success" responses when the user confirmed a booking — the model
+        // would say "done" as text without ever calling the tool.
+        // anyToolCalled tracks whether any step in the multi-step generation called a tool.
+        // response.toolResults only reflects the LAST step, which is always a text step with
+        // no tool calls, so we must track this ourselves via onStepFinish.
+        let anyToolCalled = false;
+
         const response = streamText({
             model: openai('gpt-5-nano'),
             tools,
+            stopWhen: stepCountIs(3),
             system: systemPrompt,
             messages: conversationMessages,
+            onStepFinish: ({ toolCalls, toolResults: stepResults }) => {
+                if (toolCalls && toolCalls.length > 0) {
+                    anyToolCalled = true;
+                    for (const tc of toolCalls) {
+                        console.log(`[ART] Tool called: "${tc.toolName}"`, JSON.stringify(tc.input));
+                    }
+                    for (const tr of (stepResults ?? [])) {
+                        console.log(`[ART] Tool result: "${tr.toolName}"`, tr.output);
+                    }
+                }
+            },
             onFinish: async () => {
                 await httpClient.close();
             },
@@ -112,75 +133,44 @@ export async function POST(req: Request) {
             },
         });
 
-        // Wait for tool results to be processed
-        const toolResults = await response.toolResults;
+        // Pipe the response stream directly to the client. With multi-step the final step
+        // already contains the human-readable synthesis, so no second streamText is needed.
+        // After the stream closes, append the metadata sentinel if any tool was called so the
+        // client sets toolsExecuted=true before isLoading goes false and the refresh fires.
+        const textStream = response.toTextStreamResponse();
+        const reader = textStream.body?.getReader();
 
-        // If tools were called, generate a final response based on the tool results only
-        if (toolResults && toolResults.length > 0) {
-            for (const toolResult of toolResults) {
-                console.log(`Tool "${toolResult.toolName}" was called with input:`, toolResult.input);
-                console.log(`Tool "${toolResult.toolName}" returned output:`, toolResult.output);
-            }
-
-            // Return only the final response based on tool results
-            // Use a more powerful model for the final response if desired, since it won't be calling tools and just needs to synthesize the tool results into a final answer
-            // Summarizes results and avoids “general knowledge” drift.
-            const finalResponse = streamText({
-                model: openai('gpt-5-nano'),
-                system: `You are ART, SMYLSYNC’s internal operations agent.  Follow these rules when generating your final answer:\n
-                - You must NOT answer general knowledge questions directly.\n
-                - You may only answer using information returned by tools.\n
-                - Provide the answer that even a seven year old could understand. \n
-                - If a tool was executed successfully, you must use the tool results to answer the original question.  Do not use any general knowledge or make assumptions that are not based on the tool results.\n
-                - Do not offer any other suggestions, just use the tools necessary to answer the question.`,
-                messages: [
-                    ...conversationMessages,
-                    { role: 'assistant' as const, content: `Tool Results: ${JSON.stringify(toolResults)}` },
-                ],
-            });
-
-            // Add tool execution metadata at the start of the stream
-            const textStream = finalResponse.toTextStreamResponse();
-            const reader = textStream.body?.getReader();
-
-            if (reader) {
-                // Create a new ReadableStream with tool execution flag prepended
-                const newStream = new ReadableStream({
-                    async start(controller) {
-                        // Send metadata first
-                        controller.enqueue(new TextEncoder().encode('data: {"toolsExecuted": true}\n\n'));
-
-                        // Then pipe the rest
-                        try {
-                            while (true) {
-                                const { done, value } = await reader.read();
-                                if (done) {
-                                    controller.close();
-                                    break;
-                                }
-                                controller.enqueue(value);
-                            }
-                        } catch (error) {
-                            controller.error(error);
-                        }
-                    },
-                });
-
-                return new Response(newStream, {
-                    headers: {
-                        'Content-Type': 'text/event-stream',
-                        'Cache-Control': 'no-cache',
-                        'Connection': 'keep-alive',
-                    },
-                });
-            }
-
+        if (!reader) {
             return textStream;
         }
 
-        // If no tools were called, return the original response
-        return response.toTextStreamResponse();
+        const METADATA = new TextEncoder().encode('data: {"toolsExecuted": true}\n\n');
 
+        const outStream = new ReadableStream({
+            async start(controller) {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        controller.enqueue(value);
+                    }
+                } catch (err) {
+                    controller.error(err);
+                    return;
+                }
+                if (anyToolCalled) {
+                    controller.enqueue(METADATA);
+                }
+                controller.close();
+            },
+        });
+
+        return new Response(outStream, {
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Cache-Control': 'no-cache',
+            },
+        });
     } catch (error) {
         console.error('ART API error:', error);
         const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
