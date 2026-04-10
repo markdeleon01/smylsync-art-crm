@@ -17,12 +17,12 @@ describe('Schedules Page', () => {
     });
 
     it('renders the weekly calendar grid by default', () => {
+        cy.contains('Monday').should('be.visible');
         cy.contains('Sunday').should('be.visible');
-        cy.contains('Saturday').should('be.visible');
     });
 
     it('shows all seven day column headers in week view', () => {
-        ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach((day) => {
+        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].forEach((day) => {
             cy.contains(day).should('exist');
         });
     });
@@ -77,8 +77,8 @@ describe('Schedules Page', () => {
         // Day view shows a single column (day name visible in header)
         const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
         cy.contains(dayName).should('be.visible');
-        // Seven-column Sunday header should no longer be a day-column header
-        cy.contains('Sunday').should('not.exist');
+        // Seven-column Monday header should no longer be a day-column header
+        cy.contains('Monday').should('not.exist');
     });
 
     it('shows "No appointments scheduled for this day" when day view is empty', () => {
@@ -101,8 +101,8 @@ describe('Schedules Page', () => {
     it('switches back to Week view when Week button is clicked', () => {
         cy.contains('button', 'Month').click();
         cy.contains('button', 'Week').click();
+        cy.contains('Monday').should('be.visible');
         cy.contains('Sunday').should('be.visible');
-        cy.contains('Saturday').should('be.visible');
     });
 
     // -----------------------------------------------------------------------
@@ -111,12 +111,12 @@ describe('Schedules Page', () => {
 
     it('navigates to the previous week when clicking the back arrow in week view', () => {
         cy.get('button[aria-label="Previous"]').click();
-        cy.contains('Sunday').should('be.visible');
+        cy.contains('Monday').should('be.visible');
     });
 
     it('navigates to the next week when clicking the forward arrow in week view', () => {
         cy.get('button[aria-label="Next"]').click();
-        cy.contains('Sunday').should('be.visible');
+        cy.contains('Monday').should('be.visible');
     });
 
     it('shows "this week" stats label in week view', () => {
@@ -235,7 +235,7 @@ describe('Schedules Page', () => {
 
     it('re-renders calendar after Refresh is clicked in week view', () => {
         cy.get('button[aria-label="Refresh"]').click();
-        cy.contains('Sunday').should('be.visible');
+        cy.contains('Monday').should('be.visible');
     });
 
     it('re-renders calendar after Refresh is clicked in month view', () => {

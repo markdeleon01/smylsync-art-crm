@@ -18,6 +18,7 @@ const makeMockPatient = (overrides = {}) => ({
   firstname: 'John',
   lastname: 'Doe',
   email: 'john@example.com',
+  phone: null,
   ...overrides
 });
 
@@ -122,5 +123,23 @@ describe('Patients Page', () => {
     const { container } = render(result as any);
     expect(container.textContent).toContain('Checkup');
     expect(container.textContent).toContain('Cleaning');
+  });
+
+  it('passes the phone number through when a patient has one', async () => {
+    (getAllPatients as any).mockResolvedValue([
+      makeMockPatient({ phone: '(213) 555-0101' })
+    ]);
+    const result = await PatientsPage();
+    const { container } = render(result as any);
+    expect(container.textContent).toContain('(213) 555-0101');
+  });
+
+  it('omits the phone field when phone is null', async () => {
+    (getAllPatients as any).mockResolvedValue([
+      makeMockPatient({ phone: null })
+    ]);
+    const result = await PatientsPage();
+    const { container } = render(result as any);
+    expect(container.textContent).not.toContain('Phone');
   });
 });

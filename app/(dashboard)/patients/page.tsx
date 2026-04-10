@@ -16,7 +16,8 @@ export default async function PatientsPage() {
       id: p.id as string,
       firstname: p.firstname as string,
       lastname: p.lastname as string,
-      email: p.email as string
+      email: p.email as string,
+      phone: (p.phone as string | null) ?? null
     }));
     appointments = rawAppts.map((a) => ({
       id: a.id as string,
@@ -35,14 +36,6 @@ export default async function PatientsPage() {
   return (
     <Fragment>
       <div>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
-          <p className="text-gray-600">
-            Browse all patient records. Ask ART to add, update, or remove a
-            patient, or to look up a patient by name, email, or ID.
-          </p>
-        </div>
-
         <PatientsList patients={patients} appointments={appointments} />
       </div>
     </Fragment>

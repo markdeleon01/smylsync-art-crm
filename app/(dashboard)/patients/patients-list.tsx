@@ -13,6 +13,7 @@ export interface PatientRow {
   firstname: string;
   lastname: string;
   email: string;
+  phone: string | null;
 }
 
 export interface ApptRow {
@@ -91,6 +92,38 @@ export function PatientsList({ patients, appointments }: Props) {
     top: number;
   } | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [query, setQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('patients-sort-order');
+      if (saved === 'asc' || saved === 'desc') return saved;
+    }
+    return 'asc';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('patients-sort-order', sortOrder);
+  }, [sortOrder]);
+
+  // Filter patients by ID, first name, last name, email, or phone
+  const q = query.trim().toLowerCase();
+  const filteredPatients = q
+    ? patients.filter(
+        (p) =>
+          p.id.toLowerCase().includes(q) ||
+          p.firstname.toLowerCase().includes(q) ||
+          p.lastname.toLowerCase().includes(q) ||
+          p.email.toLowerCase().includes(q) ||
+          (p.phone ?? '').toLowerCase().includes(q)
+      )
+    : patients;
+
+  // Sort by last name
+  const visiblePatients = [...filteredPatients].sort((a, b) => {
+    const cmp = a.lastname.localeCompare(b.lastname);
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
 
   // Group appointments by patient_id
   const byPatient = new Map<string, ApptRow[]>();
@@ -146,9 +179,65 @@ export function PatientsList({ patients, appointments }: Props) {
 
   return (
     <>
-      {patients.length > 0 ? (
+      {/* Heading row with search bar */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
+          <p className="text-gray-600">
+            Browse all patient records. Ask ART to add, update, or remove a
+            patient, or to look up a patient by name, email, or ID.
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setQuery(inputValue);
+            }}
+          >
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                if (e.target.value === '') setQuery('');
+              }}
+              placeholder="Search by ID, name, email, or phone…"
+              className="w-[274px] rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="Search patients"
+            />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 transition-colors"
+            >
+              Search
+            </button>
+          </form>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="sort-order"
+              className="text-sm text-gray-600 shrink-0"
+            >
+              Sort by:
+            </label>
+            <select
+              id="sort-order"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="Sort patients"
+            >
+              <option value="asc">Last name – A to Z</option>
+              <option value="desc">Last name – Z to A</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {visiblePatients.length > 0 ? (
         <div className="space-y-4">
-          {patients.map((patient) => {
+          {visiblePatients.map((patient) => {
             const appts = byPatient.get(patient.id) ?? [];
             return (
               <Card
@@ -171,7 +260,7 @@ export function PatientsList({ patients, appointments }: Props) {
                           Name
                         </p>
                         <p className="text-lg font-medium text-gray-900">
-                          {patient.firstname} {patient.lastname}
+                          {patient.lastname}, {patient.firstname}
                         </p>
                       </div>
                       <div>
@@ -182,6 +271,16 @@ export function PatientsList({ patients, appointments }: Props) {
                           {patient.email}
                         </p>
                       </div>
+                      {patient.phone && (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                            Phone
+                          </p>
+                          <p className="text-lg font-medium text-gray-900">
+                            {patient.phone}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Upcoming appointment badges */}
@@ -219,7 +318,11 @@ export function PatientsList({ patients, appointments }: Props) {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No patients found.</p>
+          <p className="text-gray-500 text-lg">
+            {q
+              ? `No patients found matching "${query}".`
+              : 'No patients found.'}
+          </p>
         </div>
       )}
 

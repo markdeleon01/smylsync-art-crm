@@ -1,25 +1,22 @@
-describe('Navigation Pages (Expected 404s)', () => {
-    it('should handle Schedules page gracefully', () => {
-        cy.visit('/schedules', { failOnStatusCode: false });
-        // Route doesn't exist, verify page loaded (either 404 or redirect)
-        cy.get('body').should('exist');
-    });
-
+describe('Unimplemented Pages (graceful fallback)', () => {
     it('should handle Claims page gracefully', () => {
         cy.visit('/claims', { failOnStatusCode: false });
-        // Route doesn't exist, verify page loaded
+        // Route is not yet implemented – verify the app does not crash
         cy.get('body').should('exist');
     });
 
     it('should handle Credentialing page gracefully', () => {
         cy.visit('/credentialing', { failOnStatusCode: false });
-        // Route doesn't exist, verify page loaded
         cy.get('body').should('exist');
     });
 
     it('should handle Analytics page gracefully', () => {
         cy.visit('/analytics', { failOnStatusCode: false });
-        // Route doesn't exist, verify page loaded
+        cy.get('body').should('exist');
+    });
+
+    it('should show a 404 page for a completely unknown route', () => {
+        cy.visit('/this-page-does-not-exist-xyz', { failOnStatusCode: false });
         cy.get('body').should('exist');
     });
 });

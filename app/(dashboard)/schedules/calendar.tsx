@@ -21,15 +21,15 @@ const PX_PER_MIN = 1.6; // 48px per 30-min slot
 const COLUMN_HEIGHT = TOTAL_MINS * PX_PER_MIN; // 1152px
 
 const DAY_NAMES = [
-  'Sunday',
   'Monday',
   'Tuesday',
   'Wednesday',
   'Thursday',
   'Friday',
-  'Saturday'
+  'Saturday',
+  'Sunday'
 ];
-const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const TYPE_COLORS: Record<string, string> = {
   consultation: 'bg-blue-100 border-blue-400 text-blue-800',
@@ -54,11 +54,11 @@ const STATUS_BADGE: Record<string, string> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getWeekSunday(date: Date): Date {
+function getWeekMonday(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0=Sun
-  d.setDate(d.getDate() - day);
+  const day = d.getDay(); // 0=Sun, 1=Mon, …
+  d.setDate(d.getDate() - ((day + 6) % 7)); // roll back to Monday
   return d;
 }
 
@@ -503,9 +503,10 @@ interface DayViewProps {
   dayDate: Date;
   appointments: AppointmentRow[];
   isLoading: boolean;
+  nowTopPx: number | null;
 }
 
-function DayView({ dayDate, appointments, isLoading }: DayViewProps) {
+function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
   const [selected, setSelected] = useState<AppointmentRow | null>(null);
   const [bubblePos, setBubblePos] = useState<{
     left: number;
@@ -610,6 +611,17 @@ function DayView({ dayDate, appointments, isLoading }: DayViewProps) {
               </div>
             )}
 
+            {/* Current-time indicator */}
+            {nowTopPx !== null && (
+              <div
+                className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
+                style={{ top: nowTopPx }}
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 -ml-1.5" />
+                <div className="flex-1 border-t-2 border-red-500" />
+              </div>
+            )}
+
             {!isLoading && appointments.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                 No appointments scheduled for this day
@@ -695,9 +707,23 @@ function DayView({ dayDate, appointments, isLoading }: DayViewProps) {
 export function SchedulesCalendar() {
   const [view, setView] = useState<'week' | 'month' | 'day'>('week');
 
+  // --- Live current-time indicator ---
+  const calcNowTopPx = (): number | null => {
+    const now = new Date();
+    const mins = (now.getHours() - BUSINESS_START) * 60 + now.getMinutes();
+    if (mins < 0 || mins > TOTAL_MINS) return null;
+    return mins * PX_PER_MIN;
+  };
+  const [nowTopPx, setNowTopPx] = useState<number | null>(calcNowTopPx);
+  useEffect(() => {
+    const id = setInterval(() => setNowTopPx(calcNowTopPx()), 60_000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // --- Week state ---
   const [weekStart, setWeekStart] = useState<Date>(() =>
-    getWeekSunday(new Date())
+    getWeekMonday(new Date())
   );
   const [weekAppointments, setWeekAppointments] = useState<AppointmentRow[]>(
     []
@@ -826,7 +852,7 @@ export function SchedulesCalendar() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     setDayDate(today);
-    setWeekStart(getWeekSunday(new Date()));
+    setWeekStart(getWeekMonday(new Date()));
     setMonthStart(getMonthStart(new Date()));
     setView('day');
   };
@@ -859,7 +885,9 @@ export function SchedulesCalendar() {
 
   const byDay: AppointmentRow[][] = [[], [], [], [], [], [], []];
   for (const appt of filteredWeekAppointments) {
-    const idx = new Date(appt.start_time).getDay();
+    // Convert JS getDay() (0=Sun … 6=Sat) to Mon-first offset (Mon=0 … Sun=6)
+    const jsDay = new Date(appt.start_time).getDay();
+    const idx = (jsDay + 6) % 7;
     if (idx >= 0 && idx < 7) byDay[idx].push(appt);
   }
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -979,6 +1007,7 @@ export function SchedulesCalendar() {
           dayDate={dayDate}
           appointments={filteredDayAppointments}
           isLoading={dayLoading}
+          nowTopPx={isToday(dayDate) ? nowTopPx : null}
         />
       )}
 
@@ -1058,6 +1087,16 @@ export function SchedulesCalendar() {
                   className={`relative border-r last:border-r-0 ${isToday(d) ? 'bg-orange-50/30' : ''}`}
                   style={{ height: COLUMN_HEIGHT }}
                 >
+                  {/* Current-time indicator (today's column only) */}
+                  {isToday(d) && nowTopPx !== null && (
+                    <div
+                      className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
+                      style={{ top: nowTopPx }}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-red-500 shrink-0 -ml-1" />
+                      <div className="flex-1 border-t-2 border-red-500" />
+                    </div>
+                  )}
                   {weekLoading && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />

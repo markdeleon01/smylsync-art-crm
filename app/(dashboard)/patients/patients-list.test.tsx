@@ -16,6 +16,7 @@ const makePatient = (overrides: Partial<PatientRow> = {}): PatientRow => ({
   firstname: 'Jane',
   lastname: 'Doe',
   email: 'jane@example.com',
+  phone: null,
   ...overrides
 });
 
@@ -53,8 +54,8 @@ describe('PatientsList – rendering', () => {
       makePatient({ id: 'p2', firstname: 'Bob', lastname: 'Jones' })
     ];
     render(<PatientsList patients={patients} appointments={[]} />);
-    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
   });
 
   it('displays patient id, name, and email on each card', () => {
@@ -66,8 +67,8 @@ describe('PatientsList – rendering', () => {
     });
     render(<PatientsList patients={[p]} appointments={[]} />);
     expect(screen.getByText('pat-xyz')).toBeInTheDocument();
-    // First and last name are rendered as adjacent text nodes; full normalised textContent is "Carlos Ray"
-    expect(screen.getByText('Carlos Ray')).toBeInTheDocument();
+    // Name is rendered as "Last, First"
+    expect(screen.getByText('Ray, Carlos')).toBeInTheDocument();
     expect(screen.getByText('carlos@clinic.com')).toBeInTheDocument();
   });
 
@@ -282,5 +283,384 @@ describe('PatientsList – upcoming-only contract', () => {
     expect(
       screen.getByRole('button', { name: /Checkup/i })
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – search', () => {
+  const patients = [
+    makePatient({
+      id: 'p1',
+      firstname: 'Alice',
+      lastname: 'Smith',
+      email: 'alice@example.com',
+      phone: '(213) 555-0101'
+    }),
+    makePatient({
+      id: 'p2',
+      firstname: 'Bob',
+      lastname: 'Jones',
+      email: 'bob@clinic.com',
+      phone: '(310) 555-0202'
+    }),
+    makePatient({
+      id: 'p3',
+      firstname: 'Carol',
+      lastname: 'Brown',
+      email: 'carol@example.com',
+      phone: '(415) 555-0303'
+    })
+  ];
+
+  it('renders the search input and button', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    expect(
+      screen.getByRole('textbox', { name: /Search patients/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Search/i })).toBeInTheDocument();
+  });
+
+  it('shows all patients when search is empty', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+  });
+
+  it('filters by first name', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: 'Alice' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+    expect(screen.queryByText('Brown, Carol')).not.toBeInTheDocument();
+  });
+
+  it('filters by last name', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: 'Jones' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+  });
+
+  it('filters by email address', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: 'carol@example.com' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+  });
+
+  it('filters by patient ID', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: 'p2' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.queryByText('Brown, Carol')).not.toBeInTheDocument();
+  });
+
+  it('is case-insensitive', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: 'ALICE' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+  });
+
+  it('shows no-results message when nothing matches', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: 'zzznomatch' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText(/No patients found matching/i)).toBeInTheDocument();
+  });
+
+  it('restores all patients when input is cleared', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    const input = screen.getByRole('textbox', { name: /Search patients/i });
+    fireEvent.change(input, { target: { value: 'Alice' } });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+    // Clear the input — all patients should reappear immediately
+    fireEvent.change(input, { target: { value: '' } });
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+  });
+
+  it('filters by partial email domain', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: '@clinic' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+  });
+
+  it('filters by phone number', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: '(415) 555-0303' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+  });
+
+  it('filters by partial phone number', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    fireEvent.change(
+      screen.getByRole('textbox', { name: /Search patients/i }),
+      { target: { value: '(213)' } }
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Heading
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – heading', () => {
+  it('renders the Patients heading', () => {
+    render(<PatientsList patients={[]} appointments={[]} />);
+    expect(
+      screen.getByRole('heading', { name: /Patients/i })
+    ).toBeInTheDocument();
+  });
+
+  it('renders the description text', () => {
+    render(<PatientsList patients={[]} appointments={[]} />);
+    expect(screen.getByText(/Browse all patient records/i)).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sorting
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – sorting', () => {
+  const patients = [
+    makePatient({
+      id: 'p1',
+      firstname: 'Charlie',
+      lastname: 'Zimmerman',
+      email: 'c@z.com'
+    }),
+    makePatient({
+      id: 'p2',
+      firstname: 'Alice',
+      lastname: 'Adams',
+      email: 'a@a.com'
+    }),
+    makePatient({
+      id: 'p3',
+      firstname: 'Bob',
+      lastname: 'Morris',
+      email: 'b@m.com'
+    })
+  ];
+
+  it('renders the sort dropdown', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    expect(
+      screen.getByRole('combobox', { name: /Sort patients/i })
+    ).toBeInTheDocument();
+  });
+
+  it('defaults to last name ascending (A to Z)', () => {
+    const { container } = render(
+      <PatientsList patients={patients} appointments={[]} />
+    );
+    const cards = container.querySelectorAll('[class*="rounded-lg border"]');
+    const names = Array.from(cards).map((c) => c.textContent);
+    const adamsIdx = names.findIndex((t) => t?.includes('Adams'));
+    const morrisIdx = names.findIndex((t) => t?.includes('Morris'));
+    const zimmermanIdx = names.findIndex((t) => t?.includes('Zimmerman'));
+    expect(adamsIdx).toBeLessThan(morrisIdx);
+    expect(morrisIdx).toBeLessThan(zimmermanIdx);
+  });
+
+  it('sorts last name descending (Z to A) when selected', () => {
+    const { container } = render(
+      <PatientsList patients={patients} appointments={[]} />
+    );
+    fireEvent.change(screen.getByRole('combobox', { name: /Sort patients/i }), {
+      target: { value: 'desc' }
+    });
+    const cards = container.querySelectorAll('[class*="rounded-lg border"]');
+    const names = Array.from(cards).map((c) => c.textContent);
+    const adamsIdx = names.findIndex((t) => t?.includes('Adams'));
+    const morrisIdx = names.findIndex((t) => t?.includes('Morris'));
+    const zimmermanIdx = names.findIndex((t) => t?.includes('Zimmerman'));
+    expect(zimmermanIdx).toBeLessThan(morrisIdx);
+    expect(morrisIdx).toBeLessThan(adamsIdx);
+  });
+
+  it('re-sorts back to ascending when switched back', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    const select = screen.getByRole('combobox', { name: /Sort patients/i });
+    fireEvent.change(select, { target: { value: 'desc' } });
+    fireEvent.change(select, { target: { value: 'asc' } });
+    expect((select as HTMLSelectElement).value).toBe('asc');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phone display on card
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – phone display', () => {
+  it('shows the phone number on the card when phone is non-null', () => {
+    const p = makePatient({ phone: '(213) 555-0101' });
+    render(<PatientsList patients={[p]} appointments={[]} />);
+    expect(screen.getByText('(213) 555-0101')).toBeInTheDocument();
+  });
+
+  it('does not render the Phone label when phone is null', () => {
+    const p = makePatient({ phone: null });
+    render(<PatientsList patients={[p]} appointments={[]} />);
+    expect(screen.queryByText('Phone')).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sort order – sessionStorage persistence
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – sort persistence (sessionStorage)', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
+
+  const patients = [
+    makePatient({
+      id: 'p1',
+      firstname: 'Charlie',
+      lastname: 'Zimmerman',
+      email: 'c@z.com'
+    }),
+    makePatient({
+      id: 'p2',
+      firstname: 'Alice',
+      lastname: 'Adams',
+      email: 'a@a.com'
+    })
+  ];
+
+  it('defaults to "asc" when sessionStorage has no saved value', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    const select = screen.getByRole('combobox', {
+      name: /Sort patients/i
+    }) as HTMLSelectElement;
+    expect(select.value).toBe('asc');
+  });
+
+  it('initialises sort order from sessionStorage when a value is saved', () => {
+    sessionStorage.setItem('patients-sort-order', 'desc');
+    render(<PatientsList patients={patients} appointments={[]} />);
+    const select = screen.getByRole('combobox', {
+      name: /Sort patients/i
+    }) as HTMLSelectElement;
+    expect(select.value).toBe('desc');
+  });
+
+  it('writes the chosen sort order to sessionStorage when changed', () => {
+    render(<PatientsList patients={patients} appointments={[]} />);
+    const select = screen.getByRole('combobox', { name: /Sort patients/i });
+    fireEvent.change(select, { target: { value: 'desc' } });
+    expect(sessionStorage.getItem('patients-sort-order')).toBe('desc');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Appointment detail bubble – additional body content
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – bubble body content', () => {
+  it('shows Start, End, and Duration labels in the bubble', () => {
+    const p = makePatient();
+    const appt = makeAppt({
+      start_time: '2026-05-10T09:00:00.000Z',
+      end_time: '2026-05-10T09:30:00.000Z'
+    });
+    render(<PatientsList patients={[p]} appointments={[appt]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Checkup/i }));
+    expect(screen.getByText('Start')).toBeInTheDocument();
+    expect(screen.getByText('End')).toBeInTheDocument();
+    expect(screen.getByText('Duration')).toBeInTheDocument();
+  });
+
+  it('shows the patient ID and appointment ID in the bubble', () => {
+    const p = makePatient({ id: 'patient-abc' });
+    const appt = makeAppt({ id: 'appt-xyz', patient_id: 'patient-abc' });
+    render(<PatientsList patients={[p]} appointments={[appt]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Checkup/i }));
+    // patient-abc appears on the card AND inside the bubble's ID row
+    expect(screen.getAllByText('patient-abc').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('appt-xyz')).toBeInTheDocument();
+  });
+
+  it('does not render a Notes section when notes is null', () => {
+    const p = makePatient();
+    const appt = makeAppt({ notes: null });
+    render(<PatientsList patients={[p]} appointments={[appt]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Checkup/i }));
+    expect(screen.queryByText('Notes')).not.toBeInTheDocument();
+  });
+
+  it('renders the correct status label for a completed appointment', () => {
+    const p = makePatient();
+    const appt = makeAppt({ status: 'completed' });
+    render(<PatientsList patients={[p]} appointments={[appt]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Checkup/i }));
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+  });
+
+  it('renders the correct status label for a cancelled appointment', () => {
+    const p = makePatient();
+    const appt = makeAppt({ status: 'cancelled' });
+    render(<PatientsList patients={[p]} appointments={[appt]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Checkup/i }));
+    expect(screen.getByText('Cancelled')).toBeInTheDocument();
+  });
+
+  it('dismisses bubble when clicking outside the bubble', () => {
+    const p = makePatient();
+    const appt = makeAppt();
+    render(<PatientsList patients={[p]} appointments={[appt]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Checkup/i }));
+    expect(
+      screen.getByText(/Ask ART to rebook or cancel/i)
+    ).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    expect(
+      screen.queryByText(/Ask ART to rebook or cancel/i)
+    ).not.toBeInTheDocument();
   });
 });

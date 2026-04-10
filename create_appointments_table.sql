@@ -1,3 +1,8 @@
+DROP INDEX IF EXISTS idx_appointments_status;
+DROP INDEX IF EXISTS idx_appointments_start_time;
+DROP INDEX IF EXISTS idx_appointments_patient_id;
+DROP TABLE IF EXISTS appointments;
+
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS recall_interval_months INT DEFAULT 6;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS last_visit_date DATE;
 

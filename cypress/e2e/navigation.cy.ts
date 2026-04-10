@@ -27,4 +27,23 @@ describe('Navigation and Links', () => {
         // Check that main content is visible
         cy.get('main').should('be.visible');
     });
+
+    it('clicking Patients link navigates to the patients page', () => {
+        cy.get('a[href="/patients"]').first().click();
+        cy.url().should('include', '/patients');
+        cy.get('h1').should('contain', 'Patients');
+    });
+
+    it('clicking Schedules link navigates to the schedules page', () => {
+        cy.get('a[href="/schedules"]').first().click();
+        cy.url().should('include', '/schedules');
+        cy.get('h1').should('contain', 'Schedules');
+    });
+
+    it('clicking Home link navigates back to the dashboard', () => {
+        cy.visit('/patients');
+        cy.get('a[href="/"]').first().click();
+        cy.url().should('match', /\/$/);
+        cy.get('h1').should('contain', 'ART');
+    });
 });

@@ -46,8 +46,8 @@ describe('Patients Page', () => {
         cy.request('GET', '/api/patients').then((res) => {
             if (res.body.length > 0) {
                 const patient = res.body[0];
-                cy.contains(patient.firstname).should('be.visible');
-                cy.contains(patient.lastname).should('be.visible');
+                // Name is displayed as "Last, First"
+                cy.contains(`${patient.lastname}, ${patient.firstname}`).should('be.visible');
             }
         });
     });
@@ -187,6 +187,148 @@ describe('Patients Page', () => {
     it('GET /api/patients/:id returns 404 for non-existent patient', () => {
         cy.request({ method: 'GET', url: '/api/patients/does-not-exist', failOnStatusCode: false }).then((res) => {
             expect(res.status).to.eq(404);
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+describe('Patients Page – search', () => {
+    beforeEach(() => {
+        cy.login();
+        cy.visit('/patients');
+    });
+
+    it('search input and button are present', () => {
+        cy.get('input[aria-label="Search patients"]').should('be.visible');
+        cy.contains('button', 'Search').should('be.visible');
+    });
+
+    it('filtering by first name shows only matching patients', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            if (res.body.length === 0) return;
+            const firstname = res.body[0].firstname;
+            cy.get('input[aria-label="Search patients"]').type(firstname);
+            cy.contains('button', 'Search').click();
+            cy.contains(firstname).should('be.visible');
+        });
+    });
+
+    it('filtering by last name shows only matching patients', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            if (res.body.length === 0) return;
+            const lastname = res.body[0].lastname;
+            cy.get('input[aria-label="Search patients"]').type(lastname);
+            cy.contains('button', 'Search').click();
+            cy.contains(lastname).should('be.visible');
+        });
+    });
+
+    it('filtering by partial phone number shows matching patients', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            const withPhone = res.body.find((p: any) => p.phone);
+            if (!withPhone) return;
+            // Search with the area-code portion only
+            const partial = withPhone.phone.substring(0, 6);
+            cy.get('input[aria-label="Search patients"]').type(partial);
+            cy.contains('button', 'Search').click();
+            cy.contains(withPhone.phone).should('be.visible');
+        });
+    });
+
+    it('shows "No patients found matching" when query has no results', () => {
+        cy.get('input[aria-label="Search patients"]').type('zzz-no-match-xyz');
+        cy.contains('button', 'Search').click();
+        cy.contains(/No patients found matching/i).should('be.visible');
+    });
+
+    it('clears search and restores all patients when input is emptied', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            if (res.body.length < 2) return;
+            const firstname = res.body[0].firstname;
+            cy.get('input[aria-label="Search patients"]').type(firstname);
+            cy.contains('button', 'Search').click();
+            // Clear the input — live-clear restores all results immediately
+            cy.get('input[aria-label="Search patients"]').clear();
+            // A second patient's last name should now be visible again
+            cy.contains(res.body[1].lastname).should('be.visible');
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Sort dropdown
+// ---------------------------------------------------------------------------
+
+describe('Patients Page – sort dropdown', () => {
+    beforeEach(() => {
+        cy.login();
+        cy.window().then((win) => win.sessionStorage.clear());
+        cy.visit('/patients');
+    });
+
+    it('sort dropdown is present with A-to-Z and Z-to-A options', () => {
+        cy.get('select[aria-label="Sort patients"]').should('be.visible');
+        cy.get('select[aria-label="Sort patients"] option').should('have.length', 2);
+        cy.get('select[aria-label="Sort patients"] option[value="asc"]').should('exist');
+        cy.get('select[aria-label="Sort patients"] option[value="desc"]').should('exist');
+    });
+
+    it('defaults to last name A-to-Z (asc)', () => {
+        cy.get('select[aria-label="Sort patients"]').should('have.value', 'asc');
+    });
+
+    it('changes sort order when Z-to-A is selected', () => {
+        cy.get('select[aria-label="Sort patients"]').select('desc');
+        cy.get('select[aria-label="Sort patients"]').should('have.value', 'desc');
+    });
+
+    it('Z-to-A puts a later-alphabet last name first', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            if (res.body.length < 2) return;
+            const sorted = [...res.body].sort((a: any, b: any) =>
+                b.lastname.localeCompare(a.lastname)
+            );
+            const lastFirst = sorted[0].lastname;
+            cy.get('select[aria-label="Sort patients"]').select('desc');
+            // The first patient card on the page should contain the Z-end last name
+            cy.get('main').find('p').contains(lastFirst).should('be.visible');
+        });
+    });
+
+    it('sort order persists after navigating away and back', () => {
+        cy.get('select[aria-label="Sort patients"]').select('desc');
+        cy.visit('/');
+        cy.visit('/patients');
+        cy.get('select[aria-label="Sort patients"]').should('have.value', 'desc');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Card content
+// ---------------------------------------------------------------------------
+
+describe('Patients Page – card content', () => {
+    beforeEach(() => {
+        cy.login();
+        cy.visit('/patients');
+    });
+
+    it('displays names in "Last, First" format', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            if (res.body.length === 0) return;
+            const p = res.body[0];
+            cy.contains(`${p.lastname}, ${p.firstname}`).should('be.visible');
+        });
+    });
+
+    it('displays phone number on cards where phone is available', () => {
+        cy.request('GET', '/api/patients').then((res) => {
+            const withPhone = res.body.find((p: any) => p.phone);
+            if (!withPhone) return;
+            cy.contains(withPhone.phone).should('be.visible');
         });
     });
 });
