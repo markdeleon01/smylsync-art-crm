@@ -42,7 +42,10 @@ describe('Navigation and Links', () => {
 
     it('clicking Home link navigates back to the dashboard', () => {
         cy.visit('/patients');
-        cy.get('a[href="/"]').first().click();
+        cy.get('a[href="/"] .sr-only')
+            .contains('Home')
+            .parent('a')
+            .click({ force: true });
         cy.url().should('match', /\/$/);
         cy.get('h1').should('contain', 'ART');
     });

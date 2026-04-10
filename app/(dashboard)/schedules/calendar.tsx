@@ -113,9 +113,9 @@ function formatAppointmentType(type: string): string {
     .join(' ');
 }
 
-// Generate time-axis labels (every 30 min)
+// Generate time-axis labels (every 30 min, including the end boundary at 8:00 PM)
 const TIME_LABELS = Array.from(
-  { length: (BUSINESS_END - BUSINESS_START) * 2 },
+  { length: (BUSINESS_END - BUSINESS_START) * 2 + 1 },
   (_, i) => {
     const totalMins = i * 30;
     const hour = BUSINESS_START + Math.floor(totalMins / 60);

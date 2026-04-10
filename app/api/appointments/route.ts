@@ -4,8 +4,13 @@ import { getPatientById } from '@/lib/services/patients';
 import { APPOINTMENT_TYPES } from '@/lib/types';
 
 export async function GET() {
-    const appointments = await getAllAppointments();
-    return Response.json(appointments);
+    try {
+        const appointments = await getAllAppointments();
+        return Response.json(appointments);
+    } catch (err) {
+        console.error('GET /api/appointments error:', err);
+        return Response.json({ error: 'Failed to fetch appointments' }, { status: 500 });
+    }
 }
 
 export async function POST(req: NextRequest) {
@@ -32,11 +37,16 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const patient = await getPatientById(patient_id);
-    if (!patient) {
-        return Response.json({ error: `No patient found with id '${patient_id}'` }, { status: 404 });
-    }
+    try {
+        const patient = await getPatientById(patient_id);
+        if (!patient) {
+            return Response.json({ error: `No patient found with id '${patient_id}'` }, { status: 404 });
+        }
 
-    const appointment = await bookAppointment(patient_id, start_time, appointment_type, notes);
-    return Response.json(appointment, { status: 201 });
+        const appointment = await bookAppointment(patient_id, start_time, appointment_type, notes);
+        return Response.json(appointment, { status: 201 });
+    } catch (err) {
+        console.error('POST /api/appointments error:', err);
+        return Response.json({ error: 'Failed to create appointment' }, { status: 500 });
+    }
 }

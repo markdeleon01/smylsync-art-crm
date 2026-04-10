@@ -6,11 +6,16 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
-    const appointment = await getAppointmentById(id);
-    if (!appointment) {
-        return Response.json({ error: `Appointment '${id}' not found` }, { status: 404 });
+    try {
+        const appointment = await getAppointmentById(id);
+        if (!appointment) {
+            return Response.json({ error: `Appointment '${id}' not found` }, { status: 404 });
+        }
+        return Response.json(appointment);
+    } catch (err) {
+        console.error(`GET /api/appointments/${id} error:`, err);
+        return Response.json({ error: 'Failed to fetch appointment' }, { status: 500 });
     }
-    return Response.json(appointment);
 }
 
 export async function DELETE(
@@ -18,10 +23,15 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
-    const appointment = await getAppointmentById(id);
-    if (!appointment) {
-        return Response.json({ error: `Appointment '${id}' not found` }, { status: 404 });
+    try {
+        const appointment = await getAppointmentById(id);
+        if (!appointment) {
+            return Response.json({ error: `Appointment '${id}' not found` }, { status: 404 });
+        }
+        const cancelled = await cancelAppointment(id);
+        return Response.json(cancelled);
+    } catch (err) {
+        console.error(`DELETE /api/appointments/${id} error:`, err);
+        return Response.json({ error: 'Failed to delete appointment' }, { status: 500 });
     }
-    const cancelled = await cancelAppointment(id);
-    return Response.json(cancelled);
 }
