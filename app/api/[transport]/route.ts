@@ -4,10 +4,10 @@ import { z } from "zod";
 import { NextRequest } from "next/server";
 
 import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, updatePatientPhone, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById, deletePatientByLastName, deletePatientByFirstName, deletePatientByEmail } from "@/lib/services/patients";
-import { getAllAppointments, getAppointmentById, getAppointmentsByPatientId, getAppointmentsOnDate, bookAppointment, rebookAppointment, cancelAppointment, completeAppointment, getAvailableSlots, autofillSchedule } from "@/lib/services/appointments";
+import { getAllAppointments, getAppointmentById, getAppointmentsByPatientId, getAppointmentsOnDate, bookAppointment, rebookAppointment, cancelAppointment, completeAppointment, getAvailableSlots, autofillSchedule, markReminderSent } from "@/lib/services/appointments";
 import { APPOINTMENT_TYPES } from "@/lib/types";
 import type { Appointment } from "@/lib/types";
-import { sendBookingConfirmation, sendReschedulingNotification, sendCancellationNotice } from "@/lib/email";
+import { sendBookingConfirmation, sendReschedulingNotification, sendCancellationNotice, sendReminderEmail } from "@/lib/email";
 
 // Define schemas outside to help with type inference
 const patientIdSchema = z.object({ id: z.string() });
@@ -520,6 +520,35 @@ function createMcpServer() {
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 return { content: [{ type: "text", text: `Failed to complete appointment: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "send_reminder",
+        {
+            title: "Send Appointment Reminder",
+            description: "Manually send a reminder email to a patient for a specific appointment. Use this when a user asks to remind a patient about an upcoming appointment. Ask for confirmation before sending.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+        },
+        async ({ id }: { id: string }) => {
+            try {
+                const appt = await getAppointmentById(id);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
+                if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }] };
+                await sendReminderEmail(
+                    appt as Appointment,
+                    appt.firstname as string,
+                    appt.lastname as string,
+                    appt.email as string
+                );
+                await markReminderSent(id);
+                const text = `Reminder email sent to ${appt.firstname} ${appt.lastname} (${appt.email}) for their ${appt.appointment_type} appointment on ${new Date(appt.start_time as string).toLocaleString()}.`;
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to send reminder: ${msg}` }], isError: true };
             }
         }
     );

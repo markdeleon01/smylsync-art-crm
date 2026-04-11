@@ -125,3 +125,37 @@ export async function sendCancellationNotice(
         console.error('[email] Failed to send cancellation notice:', err);
     }
 }
+
+export async function sendReminderEmail(
+    appointment: Appointment,
+    firstName: string,
+    lastName: string,
+    patientEmail: string
+) {
+    const transporter = createTransporter();
+    if (!transporter) {
+        console.log('[email] SMTP not configured – skipping reminder email');
+        return;
+    }
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM,
+            to: patientEmail,
+            subject: 'Appointment Reminder – SmylSync Dental',
+            html: `
+                <p>Dear ${firstName} ${lastName},</p>
+                <p>This is a friendly reminder that you have an appointment scheduled for <strong>tomorrow</strong>:</p>
+                <ul>
+                    <li><strong>Type:</strong> ${capitalize(appointment.appointment_type)}</li>
+                    <li><strong>Date &amp; Time:</strong> ${formatDateTime(appointment.start_time)}</li>
+                    <li><strong>End Time:</strong> ${formatDateTime(appointment.end_time)}</li>
+                </ul>
+                <p>If you need to reschedule or cancel, please contact us as soon as possible.</p>
+                <p>We look forward to seeing you!</p>
+                <p>Thank you,<br/>SmylSync Dental</p>
+            `,
+        });
+    } catch (err) {
+        console.error('[email] Failed to send reminder email:', err);
+    }
+}
