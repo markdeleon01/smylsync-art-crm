@@ -17,13 +17,11 @@ export const getPatientById = async (id: string) => {
     return data[0];
 }
 
-export const createPatient = async (firstname: string, lastname: string, email: string) => {
+export const createPatient = async (firstname: string, lastname: string, email: string, phone?: string) => {
 
     const sql = neon(process.env.POSTGRES_URL!);
-    //console.log('Creating patient with:', { firstname, lastname, email });
     const id = crypto.randomUUID();
-    const data = await sql`INSERT INTO patients (id, firstname, lastname, email) VALUES (${id}, ${firstname}, ${lastname}, ${email}) RETURNING *;`;
-    //console.log('createPatient=', data);
+    const data = await sql`INSERT INTO patients (id, firstname, lastname, email, phone) VALUES (${id}, ${firstname}, ${lastname}, ${email}, ${phone ?? null}) RETURNING *;`;
     return data[0];
 }
 
@@ -80,6 +78,13 @@ export const updatePatientEmail = async (id: string, email: string) => {
     const sql = neon(process.env.POSTGRES_URL!);
     const data = await sql`UPDATE patients SET email = ${email} WHERE id = ${id} RETURNING *;`;
     //console.log('updatePatientEmail=', data);
+    return data[0];
+}
+
+export const updatePatientPhone = async (id: string, phone: string) => {
+
+    const sql = neon(process.env.POSTGRES_URL!);
+    const data = await sql`UPDATE patients SET phone = ${phone} WHERE id = ${id} RETURNING *;`;
     return data[0];
 }
 

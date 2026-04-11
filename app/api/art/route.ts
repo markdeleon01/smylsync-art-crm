@@ -99,10 +99,9 @@ export async function POST(req: Request) {
         ];
 
         // Call the gpt-5-nano (faster and cheaper) model to decide which tool(s) to call and with what arguments.
-        // stopWhen: stepCountIs(3) enables the agentic loop so the model can confirm → call tool → see result
-        // in a single request. Without this, the model can only do ONE of: generate text OR call a tool.
-        // That caused hallucinated "success" responses when the user confirmed a booking — the model
-        // would say "done" as text without ever calling the tool.
+        // stopWhen: stepCountIs(3) allows the model to make up to two sequential tool calls
+        // (e.g. look up a patient, then book an appointment) before producing a final text response.
+        // Confirmation always happens in the preceding user turn — it is never a step inside this loop.
         // anyToolCalled tracks whether any step in the multi-step generation called a tool.
         // response.toolResults only reflects the LAST step, which is always a text step with
         // no tool calls, so we must track this ourselves via onStepFinish.

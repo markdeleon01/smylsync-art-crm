@@ -3,9 +3,11 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { NextRequest } from "next/server";
 
-import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById, deletePatientByLastName, deletePatientByFirstName, deletePatientByEmail } from "@/lib/services/patients";
+import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, updatePatientPhone, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById, deletePatientByLastName, deletePatientByFirstName, deletePatientByEmail } from "@/lib/services/patients";
 import { getAllAppointments, getAppointmentById, getAppointmentsByPatientId, getAppointmentsOnDate, bookAppointment, rebookAppointment, cancelAppointment, completeAppointment, getAvailableSlots, autofillSchedule } from "@/lib/services/appointments";
 import { APPOINTMENT_TYPES } from "@/lib/types";
+import type { Appointment } from "@/lib/types";
+import { sendBookingConfirmation, sendReschedulingNotification, sendCancellationNotice } from "@/lib/email";
 
 // Define schemas outside to help with type inference
 const patientIdSchema = z.object({ id: z.string() });
@@ -15,7 +17,8 @@ const patientLastNameSchema = z.object({ lastname: z.string().max(255) });
 const updateFirstNameSchema = z.object({ id: z.string(), firstname: z.string().max(255) });
 const updateLastNameSchema = z.object({ id: z.string(), lastname: z.string().max(255) });
 const updateEmailSchema = z.object({ id: z.string(), email: z.string().max(255) });
-const createPatientSchema = z.object({ firstname: z.string().max(255), lastname: z.string().max(255), email: z.string().max(255) });
+const updatePhoneSchema = z.object({ id: z.string(), phone: z.string().max(20) });
+const createPatientSchema = z.object({ firstname: z.string().max(255), lastname: z.string().max(255), email: z.string().max(255), phone: z.string().max(20).optional() });
 
 // Appointment schemas
 const appointmentIdSchema = z.object({ id: z.string() });
@@ -200,6 +203,20 @@ function createMcpServer() {
     );
 
     server.registerTool(
+        "update_patient_phone",
+        {
+            title: "Update Patient Phone",
+            description: "Use this tool when a user asks to change or correct a patient's phone number given their ID.",
+            inputSchema: updatePhoneSchema,
+            annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+        },
+        async ({ id, phone }: { id: string; phone: string }) => {
+            const updatedPatient = await updatePatientPhone(id, phone);
+            return { content: [{ type: "text", text: `Patient phone updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Phone: ${updatedPatient.phone}` }] };
+        }
+    );
+
+    server.registerTool(
         "create_new_patient",
         {
             title: "Create New Patient",
@@ -207,9 +224,9 @@ function createMcpServer() {
             inputSchema: createPatientSchema,
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
         },
-        async ({ firstname, lastname, email }: { firstname: string; lastname: string; email: string }) => {
-            const newPatient = await createPatient(firstname, lastname, email);
-            return { content: [{ type: "text", text: `Patient created successfully.\nPatient ID: ${newPatient.id}\nFirst Name: ${newPatient.firstname}\nLast Name: ${newPatient.lastname}\nEmail: ${newPatient.email}` }] };
+        async ({ firstname, lastname, email, phone }: { firstname: string; lastname: string; email: string; phone?: string }) => {
+            const newPatient = await createPatient(firstname, lastname, email, phone);
+            return { content: [{ type: "text", text: `Patient created successfully.\nPatient ID: ${newPatient.id}\nFirst Name: ${newPatient.firstname}\nLast Name: ${newPatient.lastname}\nEmail: ${newPatient.email}\nPhone: ${newPatient.phone ?? 'N/A'}` }] };
         }
     );
 
@@ -413,6 +430,12 @@ function createMcpServer() {
                 }
 
                 const appt = await bookAppointment(patient_id, start_time, appointment_type, notes);
+                void sendBookingConfirmation(
+                    appt as Appointment,
+                    patient.firstname as string,
+                    patient.lastname as string,
+                    patient.email as string
+                );
                 const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${appt.start_time}\nEnd: ${appt.end_time}\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
@@ -432,8 +455,17 @@ function createMcpServer() {
         },
         async ({ id, new_start_time }: { id: string; new_start_time: string }) => {
             try {
+                const existing = await getAppointmentById(id);
                 const appt = await rebookAppointment(id, new_start_time);
                 if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
+                if (existing?.email) {
+                    void sendReschedulingNotification(
+                        appt as Appointment,
+                        existing.firstname as string,
+                        existing.lastname as string,
+                        existing.email as string
+                    );
+                }
                 const text = `Appointment rebooked successfully.\nID: ${appt.id}\nNew Start: ${appt.start_time}\nNew End: ${appt.end_time}\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
@@ -453,8 +485,17 @@ function createMcpServer() {
         },
         async ({ id }: { id: string }) => {
             try {
+                const existing = await getAppointmentById(id);
                 const appt = await cancelAppointment(id);
                 if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
+                if (existing?.email) {
+                    void sendCancellationNotice(
+                        existing as Appointment,
+                        existing.firstname as string,
+                        existing.lastname as string,
+                        existing.email as string
+                    );
+                }
                 return { content: [{ type: "text", text: `Appointment '${id}' has been cancelled.` }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);

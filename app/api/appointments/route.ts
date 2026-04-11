@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { getAllAppointments, bookAppointment } from '@/lib/services/appointments';
 import { getPatientById } from '@/lib/services/patients';
 import { APPOINTMENT_TYPES } from '@/lib/types';
+import type { Appointment } from '@/lib/types';
+import { sendBookingConfirmation } from '@/lib/email';
 
 export async function GET() {
     try {
@@ -44,6 +46,12 @@ export async function POST(req: NextRequest) {
         }
 
         const appointment = await bookAppointment(patient_id, start_time, appointment_type, notes);
+        void sendBookingConfirmation(
+            appointment as Appointment,
+            patient.firstname as string,
+            patient.lastname as string,
+            patient.email as string
+        );
         return Response.json(appointment, { status: 201 });
     } catch (err) {
         console.error('POST /api/appointments error:', err);

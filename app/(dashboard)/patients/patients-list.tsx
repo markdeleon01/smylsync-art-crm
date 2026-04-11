@@ -94,13 +94,12 @@ export function PatientsList({ patients, appointments }: Props) {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [query, setQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('patients-sort-order');
-      if (saved === 'asc' || saved === 'desc') return saved;
-    }
-    return 'asc';
-  });
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('patients-sort-order');
+    if (saved === 'asc' || saved === 'desc') setSortOrder(saved);
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem('patients-sort-order', sortOrder);
