@@ -256,12 +256,9 @@ describe('MCP tool – update_patient_phone', () => {
 // ── Appointment tool tests ─────────────────────────────────────────────────
 
 describe('MCP tool – book_appointment', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockSendBookingConfirmation.mockResolvedValue(undefined);
-    });
+    beforeEach(() => vi.clearAllMocks());
 
-    it('books appointment and fires confirmation email', async () => {
+    it('books appointment successfully without sending email', async () => {
         mockGetPatientById.mockResolvedValue(PATIENT);
         mockBookAppointment.mockResolvedValue(APPT);
 
@@ -273,7 +270,7 @@ describe('MCP tool – book_appointment', () => {
 
         expect(result.content[0].text).toContain('Appointment booked successfully');
         expect(result.content[0].text).toContain('appt-1');
-        expect(mockSendBookingConfirmation).toHaveBeenCalledOnce();
+        expect(mockSendBookingConfirmation).not.toHaveBeenCalled();
     });
 
     it('returns error text when patient does not exist', async () => {
@@ -302,13 +299,9 @@ describe('MCP tool – book_appointment', () => {
 });
 
 describe('MCP tool – rebook_appointment', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockSendReschedulingNotification.mockResolvedValue(undefined);
-    });
+    beforeEach(() => vi.clearAllMocks());
 
-    it('rebooks and fires rescheduling email', async () => {
-        mockGetAppointmentById.mockResolvedValue(APPT);
+    it('rebooks appointment successfully without sending email', async () => {
         mockRebookAppointment.mockResolvedValue({ ...APPT, start_time: '2026-06-10T09:00:00.000Z' });
 
         const result = await callTool('rebook_appointment', {
@@ -317,7 +310,7 @@ describe('MCP tool – rebook_appointment', () => {
         }) as any;
 
         expect(result.content[0].text).toContain('Appointment rebooked successfully');
-        expect(mockSendReschedulingNotification).toHaveBeenCalledOnce();
+        expect(mockSendReschedulingNotification).not.toHaveBeenCalled();
     });
 
     it('returns isError when rebookAppointment throws', async () => {
@@ -332,19 +325,15 @@ describe('MCP tool – rebook_appointment', () => {
 });
 
 describe('MCP tool – cancel_appointment', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockSendCancellationNotice.mockResolvedValue(undefined);
-    });
+    beforeEach(() => vi.clearAllMocks());
 
-    it('cancels and fires cancellation email', async () => {
-        mockGetAppointmentById.mockResolvedValue(APPT);
+    it('cancels appointment successfully without sending email', async () => {
         mockCancelAppointment.mockResolvedValue({ ...APPT, status: 'cancelled' });
 
         const result = await callTool('cancel_appointment', { id: 'appt-1' }) as any;
 
         expect(result.content[0].text).toContain("has been cancelled");
-        expect(mockSendCancellationNotice).toHaveBeenCalledOnce();
+        expect(mockSendCancellationNotice).not.toHaveBeenCalled();
     });
 
     it('returns isError when cancelAppointment throws', async () => {
@@ -409,5 +398,96 @@ describe('MCP tool – complete_appointment', () => {
         mockCompleteAppointment.mockRejectedValue(new Error('already completed'));
         const result = await callTool('complete_appointment', { id: 'appt-1' }) as any;
         expect(result.isError).toBe(true);
+    });
+});
+
+describe('MCP tool – send_booking_confirmation', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('sends booking confirmation for a valid appointment', async () => {
+        mockGetAppointmentById.mockResolvedValue(APPT);
+        mockSendBookingConfirmation.mockResolvedValue(undefined);
+        const result = await callTool('send_booking_confirmation', { id: 'appt-1' }) as any;
+        expect(result.content[0].text).toContain('Booking confirmation sent');
+        expect(result.content[0].text).toContain('jane@example.com');
+        expect(mockSendBookingConfirmation).toHaveBeenCalledOnce();
+    });
+
+    it('returns isError when appointment is not found', async () => {
+        mockGetAppointmentById.mockResolvedValue(undefined);
+        const result = await callTool('send_booking_confirmation', { id: 'bad-id' }) as any;
+        expect(result.isError).toBe(true);
+        expect(mockSendBookingConfirmation).not.toHaveBeenCalled();
+    });
+
+    it('returns isError when patient has no email', async () => {
+        mockGetAppointmentById.mockResolvedValue({ ...APPT, email: undefined });
+        const result = await callTool('send_booking_confirmation', { id: 'appt-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(mockSendBookingConfirmation).not.toHaveBeenCalled();
+    });
+
+    it('returns isError when sendBookingConfirmation throws', async () => {
+        mockGetAppointmentById.mockResolvedValue(APPT);
+        mockSendBookingConfirmation.mockRejectedValue(new Error('SMTP failure'));
+        const result = await callTool('send_booking_confirmation', { id: 'appt-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('SMTP failure');
+    });
+});
+
+describe('MCP tool – send_rescheduling_notification', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('sends rescheduling notification for a valid appointment', async () => {
+        mockGetAppointmentById.mockResolvedValue(APPT);
+        mockSendReschedulingNotification.mockResolvedValue(undefined);
+        const result = await callTool('send_rescheduling_notification', { id: 'appt-1' }) as any;
+        expect(result.content[0].text).toContain('Rescheduling notification sent');
+        expect(result.content[0].text).toContain('jane@example.com');
+        expect(mockSendReschedulingNotification).toHaveBeenCalledOnce();
+    });
+
+    it('returns isError when appointment is not found', async () => {
+        mockGetAppointmentById.mockResolvedValue(undefined);
+        const result = await callTool('send_rescheduling_notification', { id: 'bad-id' }) as any;
+        expect(result.isError).toBe(true);
+        expect(mockSendReschedulingNotification).not.toHaveBeenCalled();
+    });
+
+    it('returns isError when sendReschedulingNotification throws', async () => {
+        mockGetAppointmentById.mockResolvedValue(APPT);
+        mockSendReschedulingNotification.mockRejectedValue(new Error('SMTP failure'));
+        const result = await callTool('send_rescheduling_notification', { id: 'appt-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('SMTP failure');
+    });
+});
+
+describe('MCP tool – send_cancellation_notice', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('sends cancellation notice for a valid appointment', async () => {
+        mockGetAppointmentById.mockResolvedValue(APPT);
+        mockSendCancellationNotice.mockResolvedValue(undefined);
+        const result = await callTool('send_cancellation_notice', { id: 'appt-1' }) as any;
+        expect(result.content[0].text).toContain('Cancellation notice sent');
+        expect(result.content[0].text).toContain('jane@example.com');
+        expect(mockSendCancellationNotice).toHaveBeenCalledOnce();
+    });
+
+    it('returns isError when appointment is not found', async () => {
+        mockGetAppointmentById.mockResolvedValue(undefined);
+        const result = await callTool('send_cancellation_notice', { id: 'bad-id' }) as any;
+        expect(result.isError).toBe(true);
+        expect(mockSendCancellationNotice).not.toHaveBeenCalled();
+    });
+
+    it('returns isError when sendCancellationNotice throws', async () => {
+        mockGetAppointmentById.mockResolvedValue(APPT);
+        mockSendCancellationNotice.mockRejectedValue(new Error('SMTP failure'));
+        const result = await callTool('send_cancellation_notice', { id: 'appt-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('SMTP failure');
     });
 });

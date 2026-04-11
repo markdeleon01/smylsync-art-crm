@@ -430,12 +430,6 @@ function createMcpServer() {
                 }
 
                 const appt = await bookAppointment(patient_id, start_time, appointment_type, notes);
-                void sendBookingConfirmation(
-                    appt as Appointment,
-                    patient.firstname as string,
-                    patient.lastname as string,
-                    patient.email as string
-                );
                 const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${appt.start_time}\nEnd: ${appt.end_time}\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
@@ -455,17 +449,8 @@ function createMcpServer() {
         },
         async ({ id, new_start_time }: { id: string; new_start_time: string }) => {
             try {
-                const existing = await getAppointmentById(id);
                 const appt = await rebookAppointment(id, new_start_time);
                 if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
-                if (existing?.email) {
-                    void sendReschedulingNotification(
-                        appt as Appointment,
-                        existing.firstname as string,
-                        existing.lastname as string,
-                        existing.email as string
-                    );
-                }
                 const text = `Appointment rebooked successfully.\nID: ${appt.id}\nNew Start: ${appt.start_time}\nNew End: ${appt.end_time}\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
@@ -485,17 +470,8 @@ function createMcpServer() {
         },
         async ({ id }: { id: string }) => {
             try {
-                const existing = await getAppointmentById(id);
                 const appt = await cancelAppointment(id);
                 if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }] };
-                if (existing?.email) {
-                    void sendCancellationNotice(
-                        existing as Appointment,
-                        existing.firstname as string,
-                        existing.lastname as string,
-                        existing.email as string
-                    );
-                }
                 return { content: [{ type: "text", text: `Appointment '${id}' has been cancelled.` }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
@@ -549,6 +525,91 @@ function createMcpServer() {
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 return { content: [{ type: "text", text: `Failed to send reminder: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    // -----------------------------------------------------------------------
+    // Email notification tools  (called independently for atomic execution)
+    // -----------------------------------------------------------------------
+
+    server.registerTool(
+        "send_booking_confirmation",
+        {
+            title: "Send Booking Confirmation Email",
+            description: "Send a booking confirmation email to the patient for a given appointment. Call this after book_appointment to notify the patient atomically as a separate step.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+        },
+        async ({ id }: { id: string }) => {
+            try {
+                const appt = await getAppointmentById(id);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
+                if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
+                await sendBookingConfirmation(
+                    appt as Appointment,
+                    appt.firstname as string,
+                    appt.lastname as string,
+                    appt.email as string
+                );
+                return { content: [{ type: "text", text: `Booking confirmation sent to ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to send booking confirmation: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "send_rescheduling_notification",
+        {
+            title: "Send Rescheduling Notification Email",
+            description: "Send a rescheduling notification email to the patient for a given appointment. Call this after rebook_appointment to notify the patient atomically as a separate step.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+        },
+        async ({ id }: { id: string }) => {
+            try {
+                const appt = await getAppointmentById(id);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
+                if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
+                await sendReschedulingNotification(
+                    appt as Appointment,
+                    appt.firstname as string,
+                    appt.lastname as string,
+                    appt.email as string
+                );
+                return { content: [{ type: "text", text: `Rescheduling notification sent to ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to send rescheduling notification: ${msg}` }], isError: true };
+            }
+        }
+    );
+
+    server.registerTool(
+        "send_cancellation_notice",
+        {
+            title: "Send Cancellation Notice Email",
+            description: "Send a cancellation notice email to the patient for a given appointment. Call this after cancel_appointment to notify the patient atomically as a separate step.",
+            inputSchema: appointmentIdSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+        },
+        async ({ id }: { id: string }) => {
+            try {
+                const appt = await getAppointmentById(id);
+                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
+                if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
+                await sendCancellationNotice(
+                    appt as Appointment,
+                    appt.firstname as string,
+                    appt.lastname as string,
+                    appt.email as string
+                );
+                return { content: [{ type: "text", text: `Cancellation notice sent to ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to send cancellation notice: ${msg}` }], isError: true };
             }
         }
     );
