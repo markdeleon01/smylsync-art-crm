@@ -118,7 +118,7 @@ vi.mock('@/lib/services/appointments', () => ({
     markReminderSent: hoisted.mockMarkReminderSent,
 }));
 
-vi.mock('@/lib/email', () => ({
+vi.mock('@/lib/services/email', () => ({
     sendBookingConfirmation: hoisted.mockSendBookingConfirmation,
     sendReschedulingNotification: hoisted.mockSendReschedulingNotification,
     sendCancellationNotice: hoisted.mockSendCancellationNotice,

@@ -17,7 +17,7 @@ vi.mock('@/lib/services/appointments', () => ({
     markReminderSent: mockMarkReminderSent,
 }));
 
-vi.mock('@/lib/email', () => ({
+vi.mock('@/lib/services/email', () => ({
     sendReminderEmail: mockSendReminderEmail,
 }));
 

@@ -58,6 +58,7 @@ export async function sendBookingConfirmation(
         });
     } catch (err) {
         console.error('[email] Failed to send booking confirmation:', err);
+        throw err; // Re-throw to allow upstream handling if needed
     }
 }
 
@@ -91,6 +92,7 @@ export async function sendReschedulingNotification(
         });
     } catch (err) {
         console.error('[email] Failed to send rescheduling notification:', err);
+        throw err; // Re-throw to allow upstream handling if needed
     }
 }
 
@@ -123,6 +125,7 @@ export async function sendCancellationNotice(
         });
     } catch (err) {
         console.error('[email] Failed to send cancellation notice:', err);
+        throw err; // Re-throw to allow upstream handling if needed
     }
 }
 
@@ -157,5 +160,6 @@ export async function sendReminderEmail(
         });
     } catch (err) {
         console.error('[email] Failed to send reminder email:', err);
+        throw err; // Re-throw to allow upstream handling if needed
     }
 }
