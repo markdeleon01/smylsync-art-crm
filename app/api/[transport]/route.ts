@@ -7,7 +7,7 @@ import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLa
 import { getAllAppointments, getAppointmentById, getAppointmentsByPatientId, getAppointmentsOnDate, bookAppointment, rebookAppointment, cancelAppointment, completeAppointment, getAvailableSlots, autofillSchedule, markReminderSent } from "@/lib/services/appointments";
 import { APPOINTMENT_TYPES } from "@/lib/types";
 import type { Appointment } from "@/lib/types";
-import { sendBookingConfirmation, sendReschedulingNotification, sendCancellationNotice, sendReminderEmail } from "@/lib/email";
+import { sendBookingConfirmation, sendReschedulingNotification, sendCancellationNotice, sendReminderEmail } from '@/lib/services/email';
 
 // Define schemas outside to help with type inference
 const patientIdSchema = z.object({ id: z.string() });

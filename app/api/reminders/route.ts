@@ -1,6 +1,6 @@
 import { getAppointmentsDueForReminder, markReminderSent } from '@/lib/services/appointments';
 import type { Appointment } from '@/lib/types';
-import { sendReminderEmail } from '@/lib/email';
+import { sendReminderEmail } from '@/lib/services/email';
 
 export async function GET(req: Request) {
     const secret = process.env.CRON_SECRET;

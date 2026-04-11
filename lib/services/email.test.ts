@@ -17,7 +17,7 @@ async function importEmail() {
     vi.mock('nodemailer', () => ({
         default: { createTransport: mockCreateTransport },
     }));
-    return import('@/lib/email');
+    return import('@/lib/services/email');
 }
 
 // ── Fixtures ───────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { getAllAppointments, bookAppointment } from '@/lib/services/appointments
 import { getPatientById } from '@/lib/services/patients';
 import { APPOINTMENT_TYPES } from '@/lib/types';
 import type { Appointment } from '@/lib/types';
-import { sendBookingConfirmation } from '@/lib/email';
+import { sendBookingConfirmation } from '@/lib/services/email';
 
 export async function GET() {
     try {

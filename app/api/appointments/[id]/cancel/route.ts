@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getAppointmentById, cancelAppointment } from '@/lib/services/appointments';
 import type { Appointment } from '@/lib/types';
-import { sendCancellationNotice } from '@/lib/email';
+import { sendCancellationNotice } from '@/lib/services/email';
 
 export async function PATCH(
     _req: NextRequest,
