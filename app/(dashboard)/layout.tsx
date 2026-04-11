@@ -4,7 +4,6 @@ import { User } from './user';
 import Providers from './providers';
 // import { SearchInput } from './search';
 import { DashboardBreadcrumb } from './breadcrumb';
-import { LoadingSpinner } from './loading-spinner';
 import { DesktopNav } from './desktop-nav';
 import { MobileNav } from './mobile-nav';
 
@@ -32,7 +31,6 @@ export default function DashboardLayout({
         </div>
         <Analytics />
         <ArtBot />
-        <LoadingSpinner />
       </main>
     </Providers>
   );

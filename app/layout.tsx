@@ -2,6 +2,7 @@ import './globals.css';
 
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/react';
+import { LoadingSpinner } from './(dashboard)/loading-spinner';
 
 export const metadata: Metadata = {
   title: 'SMYLSYNC Admin Rescue Tool (ART)',
@@ -16,7 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen w-full flex-col">{children}</body>
+      <body className="flex min-h-screen w-full flex-col">
+        {children}
+        <LoadingSpinner />
+      </body>
       <Analytics />
     </html>
   );

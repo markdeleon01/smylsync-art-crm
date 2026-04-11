@@ -97,13 +97,22 @@ export function PatientsList({ patients, appointments }: Props) {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    const saved = sessionStorage.getItem('patients-sort-order');
-    if (saved === 'asc' || saved === 'desc') setSortOrder(saved);
+    const savedSort = sessionStorage.getItem('patients-sort-order');
+    if (savedSort === 'asc' || savedSort === 'desc') setSortOrder(savedSort);
+    const savedSearch = sessionStorage.getItem('patients-search');
+    if (savedSearch) {
+      setInputValue(savedSearch);
+      setQuery(savedSearch);
+    }
   }, []);
 
   useEffect(() => {
     sessionStorage.setItem('patients-sort-order', sortOrder);
   }, [sortOrder]);
+
+  useEffect(() => {
+    sessionStorage.setItem('patients-search', query);
+  }, [query]);
 
   // Filter patients by ID, first name, last name, email, or phone
   const q = query.trim().toLowerCase();

@@ -1,30 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 export function LoadingSpinner() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const pathname = usePathname();
+
+  // Hide the spinner whenever the pathname changes — this fires after the
+  // server component has fully rendered and committed its data to the DOM,
+  // which is the correct signal that navigation is complete.
+  useEffect(() => {
+    setIsLoading(false);
+  }, [pathname]);
 
   useEffect(() => {
-    // Detect clicks on navigation links
+    // Show spinner on any internal link click
     const handleLinkClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       const link = target.closest('a');
-
       if (link) {
         const href = link.getAttribute('href');
-        // Check if it's an internal navigation link (not external or hash-only)
-        if (
-          href &&
-          !href.startsWith('http') &&
-          !href.startsWith('#') &&
-          href !== '/'
-        ) {
-          setIsLoading(true);
-        } else if (href === '/') {
-          // Home link
+        if (href && !href.startsWith('http') && !href.startsWith('#')) {
           setIsLoading(true);
         }
       }
@@ -35,56 +32,11 @@ export function LoadingSpinner() {
   }, []);
 
   useEffect(() => {
-    // Check if page was just reloaded
-    const isPageReloading = sessionStorage.getItem('page-reloading');
-    if (isPageReloading) {
-      setIsLoading(true);
-      sessionStorage.removeItem('page-reloading');
-      const timer = setTimeout(() => setIsLoading(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Set flag before page unloads/reloads
-    const handleBeforeUnload = () => {
-      sessionStorage.setItem('page-reloading', 'true');
-    };
-
+    // Show spinner when the browser is about to reload
+    const handleBeforeUnload = () => setIsLoading(true);
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
-
-  useEffect(() => {
-    // Detect navigation via router.push/replace
-    const originalPush = router.push.bind(router);
-    const originalReplace = router.replace.bind(router);
-
-    // Override push to show loader
-    (router as any).push = function (href: string, options?: any) {
-      setIsLoading(true);
-      return originalPush(href, options);
-    };
-
-    // Override replace to show loader
-    (router as any).replace = function (href: string, options?: any) {
-      setIsLoading(true);
-      return originalReplace(href, options);
-    };
-
-    return () => {
-      (router as any).push = originalPush;
-      (router as any).replace = originalReplace;
-    };
-  }, [router]);
-
-  // Hide spinner after navigation completes (set a timeout as fallback)
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => setIsLoading(false), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
 
   if (!isLoading) return null;
 
@@ -99,7 +51,6 @@ export function LoadingSpinner() {
             style={{ borderTopColor: '#FFA500' }}
           ></div>
         </div>
-
         {/* Loading text */}
         <p className="text-lg font-semibold text-gray-800">Loading...</p>
       </div>
