@@ -1,4 +1,4 @@
-<div align="center"><strong>SMYLSYNC - Admin Dashboard with AI-Powered ART Assistant</strong></div>
+<div align="center"><strong>SMYLSYNC - Dental CRM with AI-Powered ART Assistant</strong></div>
 <div align="center">Built with Next.js 16, TypeScript, and Shadcn UI</div>
 <br />
 <div align="center">
@@ -13,51 +13,62 @@
 
 ## Overview
 
-SMYLSYNC is a modern healthcare admin dashboard template featuring an AI-powered Assistant (ART - Admin Rescue Tool) and comprehensive testing infrastructure. Built with the latest web technologies and production-ready configurations.
+SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered operations agent (ART — Admin Rescue Tool) backed by a full Model Context Protocol (MCP) server. Staff can manage patients and appointments through the UI or by conversing with ART, which can look up records, book/rebook/cancel appointments, send email notifications, and auto-fill the schedule. Built with the latest web technologies and production-ready configurations.
 
 ### Tech Stack
 
 **Core Technologies:**
 
-- Framework - [Next.js 16.1.6](https://nextjs.org) with App Router and Turbopack
+- Framework - [Next.js 16](https://nextjs.org) with App Router and Turbopack
 - Language - [TypeScript 5.7.2](https://www.typescriptlang.org)
 - Styling - [Tailwind CSS 3.4.17](https://tailwindcss.com)
 - UI Components - [Shadcn UI](https://ui.shadcn.com/) with Lucide React icons
 - Authentication - [NextAuth.js 5.0.0-beta.30](https://authjs.dev) (GitHub OAuth)
-- Database - [PostgreSQL via Neon](https://vercel.com/postgres)
+- Database - [PostgreSQL via Neon](https://neon.tech) with [Drizzle ORM](https://orm.drizzle.team)
+- Deployment - [Netlify](https://netlify.com) (Next.js plugin + scheduled functions)
 - Formatting - [Prettier](https://prettier.io)
 
-**AI & Tools:**
+**AI & MCP:**
 
-- AI Integration - [Vercel AI SDK](https://sdk.vercel.ai)
-- MCP Support - [Model Context Protocol SDK](https://modelcontextprotocol.io)
+- AI SDK - [Vercel AI SDK v6](https://sdk.vercel.ai) (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`, `@ai-sdk/mcp`)
+- LLM - OpenAI GPT-5-nano (via `@ai-sdk/openai`)
+- MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — stateless HTTP transport, 25+ registered tools
 - Analytics - [Vercel Analytics](https://vercel.com/analytics)
+
+**Email:**
+
+- [Nodemailer](https://nodemailer.com) over SMTP — booking confirmations, rescheduling notices, cancellation notices, and 24-hour reminder emails
+- Automated reminders via a Netlify scheduled function running every hour
 
 **Testing & Quality:**
 
-- Unit Testing - [Vitest 4.1.0](https://vitest.dev)
+- Unit Testing - [Vitest 4.1.x](https://vitest.dev)
 - E2E Testing - [Cypress 15.12.0](https://www.cypress.io)
 - Type Safety - TypeScript with strict mode
 - CI/CD - [CircleCI](https://circleci.com)
 
 ## Features
 
-- 🤖 **ART Chatbot** - AI-powered Admin Rescue Tool assistant in the dashboard
-- 📊 **Interactive Dashboard** - Clean, intuitive admin interface
-- 🔐 **GitHub OAuth** - Secure authentication
-- 📱 **Responsive Design** - Mobile-friendly layouts
-- 🧪 **Comprehensive Tests** - 39 unit tests + 42 e2e tests
+- 🤖 **ART Agent** - AI operations agent that can read and write patient/appointment data through MCP tools, ask for confirmation before destructive actions, and chain up to multiple tool calls per turn
+- 🗓️ **Schedules Calendar** - Week/day/month calendar view of all appointments with colour-coded appointment types
+- 👥 **Patient Management** - Browse, search, sort, and view patients with their upcoming appointments; full CRUD via ART
+- 📧 **Email Notifications** - Booking confirmations, rescheduling notices, cancellation notices, and automated 24-hour reminders
+- 🔐 **GitHub OAuth** - Secure authentication via NextAuth.js
+- 📱 **Responsive Design** - Mobile-friendly layouts with responsive sidebar navigation
+- 🧪 **Comprehensive Tests** - 224 unit tests + 114 e2e tests
 - 🔄 **CI/CD Pipeline** - Automated testing and deployment with CircleCI
-- 🎨 **Modern UI** - Built with Shadcn UI and Tailwind CSS
-- 📈 **Analytics** - Integrated Vercel Analytics
+- 🎨 **Modern UI** - Shadcn UI components with Tailwind CSS
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ (tested with 20.11)
-- npm or pnpm package manager
+- Node.js 20+
+- [pnpm](https://pnpm.io) package manager (`npm install -g pnpm`)
 - GitHub account (for OAuth setup)
+- PostgreSQL database (e.g. [Neon](https://neon.tech) free tier)
+- OpenAI API key
+- SMTP credentials for email (optional but required for email features)
 
 ### Installation
 
@@ -65,107 +76,144 @@ SMYLSYNC is a modern healthcare admin dashboard template featuring an AI-powered
 
 ```bash
 git clone <repository-url>
-cd nextjs-postgres-nextauth-tailwindcss-template
-npm install
+cd smylsync-art-crm
+pnpm install
 ```
 
 2. **Environment Setup:**
 
-Copy `.env.example` to `.env` and configure:
+Create a `.env` file in the project root and configure the following variables:
 
 ```bash
-cp .env.example .env
+# Auth
+AUTH_SECRET=          # Generate with: openssl rand -base64 32
+AUTH_GITHUB_ID=       # From your GitHub OAuth app
+AUTH_GITHUB_SECRET=   # From your GitHub OAuth app
+NEXTAUTH_URL=http://localhost:8080
+
+# Database
+DATABASE_URL=         # PostgreSQL connection string (e.g. Neon)
+
+# AI
+OPENAI_API_KEY=       # OpenAI API key
+
+# Email (optional — emails are silently skipped if omitted)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=            # e.g. noreply@yourdomain.com
+SMTP_FROM_NAME=       # e.g. SMYLSYNC
+
+# Automated reminders (required for the Netlify cron function)
+CRON_SECRET=          # Any strong random string
+URL=                  # Public base URL in production (set automatically by Netlify)
 ```
 
-Update the following in `.env`:
+3. **Database Setup:**
 
-- `NEXTAUTH_SECRET` - Generate with: `openssl rand -base64 32`
-- `NEXTAUTH_URL` - Set to `http://localhost:8080` for development
-- `GITHUB_ID` and `GITHUB_SECRET` - From GitHub OAuth app
-- Database credentials (if using PostgreSQL)
+Run migrations then seed initial users:
 
-3. **Database Setup (Optional):**
-
-For Postgres database, Set database environment variables in `.env`:
-
-- `DATABASE_URL` - PostgreSQL connection string
+```bash
+pnpm run migrate
+pnpm run seed:users
+```
 
 4. **Start Development Server:**
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
-The application will be available at `http://localhost:8080`
+The application will be available at `http://localhost:8080`.
 
 ### Available Scripts
 
 ```bash
-npm run dev           # Start development server with Turbopack
-npm run build         # Build for production
-npm run start         # Start production server
-npm run test          # Run unit tests in watch mode
-npm run test:ui       # Run tests with Vitest UI dashboard
-npm run test:coverage # Generate test coverage report
+pnpm run dev              # Start development server with Turbopack
+pnpm run build            # Build for production
+pnpm run start            # Start production server
+pnpm run migrate          # Run database migrations (requires .env)
+pnpm run seed:users       # Seed initial user accounts (requires .env)
+pnpm run test             # Run unit tests in watch mode
+pnpm run test:ui          # Run tests with Vitest UI dashboard
+pnpm run test:coverage    # Generate test coverage report
+pnpm run cypress:open     # Open Cypress interactive test runner
+pnpm run cypress:run      # Run Cypress tests headlessly
+pnpm run cypress:run:headed  # Run Cypress tests in a headed browser
 ```
 
 ## Testing
 
-This project includes comprehensive testing infrastructure with both unit tests and end-to-end tests to ensure code quality and functionality.
+This project includes 224 unit tests and 114 e2e tests covering all major components, API routes, and service layers.
 
 ### Unit Tests with Vitest
-
-Vitest is used for fast, reliable unit tests with excellent TypeScript support.
 
 **Running Unit Tests:**
 
 ```bash
-npm run test              # Watch mode
-npm run test:ui           # Interactive Vitest UI dashboard
-npm run test:coverage     # Generate coverage reports
+pnpm run test              # Watch mode
+pnpm run test:ui           # Interactive Vitest UI dashboard
+pnpm run test:coverage     # Generate coverage reports
 ```
 
 **Test Files:**
 
-| Test File             | Tests  | Coverage                                     |
-| --------------------- | ------ | -------------------------------------------- |
-| Dashboard page        | 6      | Rendering, menu display, content             |
-| Patients page         | 6      | Page loading, content structure              |
-| Login page            | 6      | Auth UI, form structure                      |
-| ART Chatbot component | 21     | Toggle, messages, persistence, accessibility |
-| **Total**             | **39** | **All major components**                     |
+| Test File                              | Tests  | Coverage                                          |
+| -------------------------------------- | ------ | ------------------------------------------------- |
+| `lib/services/appointments.test.ts`    | 35     | Booking, rebooking, cancellation, availability    |
+| `app/(dashboard)/patients/patients-list.test.tsx` | 49 | Rendering, search, sort, badges, bubble, persistence |
+| `app/api/[transport]/route.test.ts`    | 30     | MCP server tools — patients & appointments        |
+| `lib/services/patients.test.ts`        | 12     | Patient CRUD operations                           |
+| `components/art/index.test.tsx`        | 21     | Toggle, messages, persistence, accessibility      |
+| `app/api/reminders/route.test.ts`      | 8      | Auth guard, reminder dispatch, edge cases         |
+| `lib/services/email.test.ts`           | 9      | Email sending, SMTP fallback                      |
+| `app/(dashboard)/patients/page.test.tsx` | 11   | Page loading, content structure                   |
+| `app/(dashboard)/loading-spinner.test.tsx` | 7  | Spinner rendering and accessibility               |
+| `app/(dashboard)/schedules/actions.test.ts` | 19 | Server actions for calendar data                 |
+| `app/(dashboard)/schedules/page.test.tsx` | 5   | Schedules page rendering                         |
+| `app/(dashboard)/page.test.tsx`        | 6      | Dashboard home rendering                          |
+| `app/login/page.test.tsx`              | 6      | Auth UI, form structure                           |
+| `app/api/patients/route.test.ts`       | 3      | Patients API GET/POST                             |
+| `app/api/patients/[id]/route.test.ts`  | 3      | Patients API GET/PATCH/DELETE by ID               |
+| **Total**                              | **224**| **All major components, routes, and services**   |
 
 **Test Configuration:**
 
 - Environment: jsdom (browser simulation)
-- Setup file: `vitest.setup.ts` (mocks, utilities)
-- Type support: Full TypeScript support
-- Test discovery: `**/*.test.{ts,tsx}`
+- Setup file: `vitest.setup.ts`
+- Test discovery: `**/*.test.{ts,tsx}` (excludes `node_modules`)
 
 ### End-to-End Tests with Cypress
-
-Cypress manages end-to-end testing with real browser automation.
 
 **Running E2E Tests:**
 
 ```bash
-npm run cypress:open           # Interactive test runner
-npm run cypress:run            # Headless execution
-npm run cypress:run:headed     # Headed browser mode
+pnpm run cypress:open          # Interactive test runner
+pnpm run cypress:run           # Headless execution
+pnpm run cypress:run:headed    # Headed browser mode
+```
+
+Start the dev server before running Cypress:
+
+```bash
+pnpm run dev   # in one terminal
+pnpm run cypress:open   # in another terminal
 ```
 
 **Test Coverage:**
 
-| Test Suite      | Tests  | Type                                       |
-| --------------- | ------ | ------------------------------------------ |
-| Login page      | 5      | Form interaction, navigation               |
-| Dashboard page  | 13     | Content, menu items, layout                |
-| Patients page   | 5      | Page structure, data display               |
-| Navigation      | 5      | Menu structure, responsive design          |
-| Chatbot         | 4      | Component rendering, positioning           |
-| Accessibility   | 6      | Semantic HTML, ARIA, alt text              |
-| Not Found (404) | 4      | ❌ Expected failures - unimplemented pages |
-| **Total**       | **42** | **38 passing, 4 expected failures**        |
+| Test Suite        | Tests   | Type                                             |
+| ----------------- | ------- | ------------------------------------------------ |
+| Schedules         | 42      | Calendar views, navigation, appointment display  |
+| Patients          | 32      | List, search, sort, appointment badges, bubble   |
+| Dashboard         | 13      | Content, navigation menu, layout                 |
+| Accessibility     | 6       | Semantic HTML, ARIA, alt text                    |
+| Navigation        | 8       | Menu structure, responsive sidebar               |
+| Login             | 5       | Form interaction, redirect                       |
+| Not Found / 404   | 4       | Graceful fallback for unimplemented routes       |
+| Chatbot           | 4       | ART component rendering and positioning          |
+| **Total**         | **114** | **All implemented pages and key user flows**     |
 
 **Configuration:**
 
@@ -174,23 +222,7 @@ npm run cypress:run:headed     # Headed browser mode
 - Default timeout: 8 seconds
 - Page load timeout: 30 seconds
 
-**Prerequisites:**
-
-Before running Cypress tests, start the development server:
-
-```bash
-npm run dev
-```
-
-Then in another terminal:
-
-```bash
-npm run cypress:open    # or npm run cypress:run
-```
-
 ### Type Checking
-
-Verify TypeScript types without compilation:
 
 ```bash
 npx tsc --noEmit
@@ -200,7 +232,7 @@ npx tsc --noEmit
 
 ### CircleCI Integration
 
-This project is fully configured with CircleCI for automated continuous integration and deployment. The pipeline runs automatically on every push to the repository.
+The pipeline runs automatically on every push to the repository.
 
 **Configuration File:** `.circleci/config.yml`
 
@@ -209,33 +241,27 @@ This project is fully configured with CircleCI for automated continuous integrat
 The pipeline executes 5 interconnected jobs:
 
 1. **install-and-cache** (1-2 minutes)
-   - Installs npm dependencies
-   - Caches node_modules for faster builds
+   - Installs pnpm dependencies and caches `node_modules`
    - Node.js 20.11
-   - Sets up workspace for downstream jobs
 
-2. **unit-tests** (1-2 minutes, runs after install-and-cache)
-   - Executes all 39 Vitest tests
+2. **unit-tests** (2-4 minutes, runs after install-and-cache)
+   - Executes all 224 Vitest tests
    - Stores test results and coverage reports
    - Artifacts: `test-results/`, `coverage/`
 
-3. **type-check** (30-60 seconds, runs parallel with unit-tests)
-   - TypeScript type verification with `tsc --noEmit`
-   - Ensures no type errors in codebase
+3. **type-check** (30-60 seconds, parallel with unit-tests)
+   - TypeScript verification with `tsc --noEmit`
 
 4. **build** (2-3 minutes, requires unit-tests + type-check)
-   - Compiles Next.js application
+   - Compiles the Next.js application
    - Caches `.next` directory by commit SHA
-   - Stores build artifacts
 
-5. **e2e-tests** (3-5 minutes, requires build)
-   - Starts development server
-   - Waits for server readiness (60 second timeout)
-   - Runs 42 Cypress tests
-   - Captures screenshots and videos for failures
+5. **e2e-tests** (5-8 minutes, requires build)
+   - Starts the development server and waits for readiness
+   - Runs all 114 Cypress tests
    - Artifacts: `cypress/screenshots/`, `cypress/videos/`
 
-**Total Pipeline Time:** 7-12 minutes (depending on system load)
+**Total Pipeline Time:** 10-15 minutes (depending on system load)
 
 ### Workflow Orchestration
 
@@ -248,147 +274,100 @@ install-and-cache
 
 ### Expected Test Results
 
-**Passing:**
-
-- ✅ 39 Unit tests (100%)
+- ✅ 224 Unit tests (100%)
 - ✅ Type checking (100%)
 - ✅ Build compilation (100%)
-- ✅ 38 E2E tests (90.5%)
-
-**Expected Failures (4 tests):**
-
-- ❌ Schedules page (404 - not implemented)
-- ❌ Claims page (404 - not implemented)
-- ❌ Credentialing page (404 - not implemented)
-- ❌ Analytics page (404 - not implemented)
+- ✅ 114 E2E tests (100%)
 
 ### Setup Instructions
 
 1. **Connect Repository to CircleCI:**
-   - Go to [CircleCI](https://circleci.com)
-   - Sign in with your GitHub account
-   - Click "Setup project"
-   - Select this repository
+   - Go to [CircleCI](https://circleci.com) and sign in with GitHub
+   - Click "Setup project" and select this repository
    - Choose "Fastest" (uses existing `.circleci/config.yml`)
 
-2. **Enable Automatic Triggers:**
-   - Pipeline automatically triggers on:
-     - Push to any branch
-     - Pull request creation
-   - View results on CircleCI dashboard and GitHub
+2. **Set Environment Variables in CircleCI:**
+
+   In the CircleCI project settings, add the same variables from your `.env` file. At minimum, `DATABASE_URL`, `OPENAI_API_KEY`, and `AUTH_SECRET` are required for the build to succeed.
 
 3. **Monitor Results:**
    - **CircleCI Dashboard:** [app.circleci.com](https://app.circleci.com)
-   - **GitHub:** View status on commits and pull requests
-   - **Artifacts:** Test results, coverage, screenshots, videos
-
-### Environment Variables (Optional)
-
-For additional CI/CD customization, set in CircleCI project settings:
-
-```
-NODE_ENV=test
-NEXT_PUBLIC_API_URL=http://localhost:8080
-```
+   - **GitHub:** Status checks on commits and pull requests
+   - **Artifacts:** Test results, coverage reports, Cypress screenshots/videos
 
 ### Caching Strategy
 
-- **npm dependencies:** Keyed by `package-lock.json`
+- **pnpm dependencies:** Keyed by `pnpm-lock.yaml`
 - **Next.js build:** Keyed by commit SHA
 - Caches shared across all jobs for performance
 
 ### Customization
 
-See [CIRCLECI.md](./CIRCLECI.md) for:
-
-- Custom environment variables
-- Modifying pipeline stages
-- Adding new jobs
-- Slack/email notifications
-- Branch-specific configurations
+See [CIRCLECI.md](./CIRCLECI.md) for modifying pipeline stages, adding jobs, and configuring notifications.
 
 ## Documentation
 
-Comprehensive guides are available:
-
-- **[CYPRESS.md](./CYPRESS.md)** - Detailed Cypress testing guide with all test descriptions
-- **[CIRCLECI.md](./CIRCLECI.md)** - Complete CircleCI setup and troubleshooting guide
+- **[CYPRESS.md](./CYPRESS.md)** - Cypress testing guide with all test descriptions
+- **[CIRCLECI.md](./CIRCLECI.md)** - CircleCI setup and troubleshooting guide
 - **[CIRCLECI_SETUP.md](./CIRCLECI_SETUP.md)** - Quick setup verification checklist
 
 ## Project Structure
 
 ```
-.circleci/
-  └── config.yml              # CircleCI pipeline configuration
-
 app/
-  ├── api/                    # API routes
+  ├── api/
+  │   ├── [transport]/        # MCP server (stateless HTTP, 25+ tools)
+  │   ├── art/                # ART chat endpoint (streamText + MCP client)
+  │   ├── appointments/       # Appointments REST API
+  │   ├── patients/           # Patients REST API
+  │   └── reminders/          # Cron-triggered reminder dispatcher
   ├── login/                  # Login page
-  └── (dashboard)/            # Dashboard layout and pages
-      ├── page.tsx            # Dashboard home (ART chatbot)
-      ├── page.test.tsx       # Dashboard tests
+  └── (dashboard)/
+      ├── page.tsx            # Dashboard home
+      ├── layout.tsx          # Sidebar navigation layout
       ├── patients/
-      │   ├── page.tsx        # Patients page
-      │   └── page.test.tsx    # Patients tests
-      └── layout.tsx          # Dashboard layout with navigation
+      │   ├── page.tsx        # Patient list with search, sort, and appointment badges
+      │   ├── patients-list.tsx
+      │   └── *.test.*
+      └── schedules/
+          ├── page.tsx        # Schedules page
+          ├── calendar.tsx    # Week/day/month calendar component
+          ├── actions.ts      # Server actions for calendar data
+          └── *.test.*
 
 components/
   ├── art/                    # ART chatbot component
-  │   ├── index.tsx
-  │   └── index.test.tsx
-  ├── ui/                     # Shadcn UI components
-  ├── logo.tsx                # SMYLSYNC logo
-  └── icons.tsx              # Icon components
-
-cypress/
-  ├── e2e/                    # E2E test files
-  │   ├── login.cy.ts
-  │   ├── dashboard.cy.ts
-  │   ├── patients.cy.ts
-  │   ├── navigation.cy.ts
-  │   ├── chatbot.cy.ts
-  │   ├── accessibility.cy.ts
-  │   └── not-found.cy.ts
-  ├── support/                # Cypress configuration
-  └── config.ts
+  └── ui/                     # Shadcn UI components
 
 lib/
-  ├── db.ts                   # Database connection
-  ├── auth.ts                 # Authentication setup
+  ├── auth.ts                 # NextAuth.js configuration
+  ├── db.ts                   # Neon/Postgres connection
+  ├── types.ts                # Shared types (Patient, Appointment, APPOINTMENT_TYPES)
   ├── hooks/
-  │   └── useChat.ts         # AI chat hook
-  └── services/               # Business logic
+  │   └── useChat.ts          # AI chat hook
+  └── services/
+      ├── appointments.ts     # Appointment CRUD, availability, autofill, reminders
+      ├── patients.ts         # Patient CRUD
+      └── email.ts            # Nodemailer email helpers
 
-public/
-  └── smylsync-logo.svg      # Logo asset
+netlify/
+  └── functions/
+      └── send-reminders.ts   # Scheduled function: calls /api/reminders every hour
 
-vitest.config.ts            # Vitest configuration
-vitest.setup.ts             # Test setup and mocks
-cypress.config.ts           # Cypress configuration
-tsconfig.json               # TypeScript configuration
-tailwind.config.ts          # Tailwind CSS configuration
-next.config.ts              # Next.js configuration
+scripts/
+  ├── migrate.ts              # Run database migrations
+  └── seed-users.ts           # Seed initial user accounts
+
+cypress/
+  └── e2e/                    # End-to-end test suites
+
+vitest.config.mts             # Vitest configuration
+vitest.setup.ts               # Test setup and global mocks
+cypress.config.ts             # Cypress configuration
+netlify.toml                  # Netlify build + functions config
+next.config.ts                # Next.js configuration
+tailwind.config.ts            # Tailwind CSS configuration
 ```
-
-## Dependencies
-
-### Production Dependencies (36)
-
-Key packages include:
-
-- next, react, react-dom, typescript
-- next-auth, @neondatabase/serverless
-- @ai-sdk/openai, @ai-sdk/react, @modelcontextprotocol/sdk
-- @radix-ui (dialog, dropdown, tooltip, tabs)
-- tailwindcss, lucide-react, shadcn components
-
-### Development Dependencies (10)
-
-Testing and build tools:
-
-- vitest, @vitest/ui, cypress
-- @testing-library (react, dom, jest-dom, user-event, cypress)
-- vite, @vitejs/plugin-react, jsdom, wait-on
 
 ## Contributing
 
