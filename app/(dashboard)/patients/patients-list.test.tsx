@@ -466,6 +466,10 @@ describe('PatientsList – heading', () => {
 // ---------------------------------------------------------------------------
 
 describe('PatientsList – sorting', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
   const patients = [
     makePatient({
       id: 'p1',

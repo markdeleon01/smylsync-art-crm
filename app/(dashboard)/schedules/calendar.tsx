@@ -721,6 +721,11 @@ export function SchedulesCalendar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Full-page overlay: stays true until the first week fetch resolves,
+  // ensuring the spinner seamlessly covers the gap after route navigation.
+  const [initialLoading, setInitialLoading] = useState(true);
+  const hasInitiallyLoaded = useRef(false);
+
   // --- Week state ---
   const [weekStart, setWeekStart] = useState<Date>(() =>
     getWeekMonday(new Date())
@@ -766,6 +771,10 @@ export function SchedulesCalendar() {
       setWeekAppointments([]);
     } finally {
       setWeekLoading(false);
+      if (!hasInitiallyLoaded.current) {
+        hasInitiallyLoaded.current = true;
+        setInitialLoading(false);
+      }
     }
   }, []);
 
@@ -913,6 +922,22 @@ export function SchedulesCalendar() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Full-page spinner overlay — visible until the initial week fetch resolves */}
+      {initialLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm pointer-events-auto">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-4 border-gray-200" />
+              <div
+                className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 animate-spin"
+                style={{ borderTopColor: '#FFA500' }}
+              />
+            </div>
+            <p className="text-lg font-semibold text-gray-800">Loading...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header: nav + view toggle + legend */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">

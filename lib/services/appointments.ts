@@ -154,6 +154,40 @@ export const completeAppointment = async (id: string) => {
 };
 
 // ---------------------------------------------------------------------------
+// Reminder helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns all scheduled appointments that start between 23 and 25 hours from
+ * now and have not yet had a reminder email sent. The 2-hour window ensures
+ * an hourly cron never misses or double-fires.
+ */
+export const getAppointmentsDueForReminder = async () => {
+    const sql = getDb();
+    return sql`
+        SELECT a.*, p.firstname, p.lastname, p.email
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.status = 'scheduled'
+          AND a.reminder_sent = FALSE
+          AND a.start_time > NOW() + INTERVAL '23 hours'
+          AND a.start_time <= NOW() + INTERVAL '25 hours'
+        ORDER BY a.start_time ASC
+    `;
+};
+
+/** Mark a single appointment's reminder as sent. */
+export const markReminderSent = async (id: string) => {
+    const sql = getDb();
+    await sql`
+        UPDATE appointments
+        SET reminder_sent = TRUE,
+            updated_at    = NOW()
+        WHERE id = ${id}
+    `;
+};
+
+// ---------------------------------------------------------------------------
 // Availability helpers
 // ---------------------------------------------------------------------------
 

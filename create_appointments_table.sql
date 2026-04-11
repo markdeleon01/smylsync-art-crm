@@ -14,9 +14,12 @@ CREATE TABLE IF NOT EXISTS appointments (
   appointment_type VARCHAR(100) NOT NULL DEFAULT 'checkup',
   status VARCHAR(50) NOT NULL DEFAULT 'scheduled',
   notes TEXT,
+  reminder_sent BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments (patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_start_time ON appointments (start_time);
