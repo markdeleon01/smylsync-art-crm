@@ -20,7 +20,9 @@ import {
     rebookAppointment,
     cancelAppointment,
     completeAppointment,
-    getAvailableSlots
+    getAvailableSlots,
+    getAppointmentsDueForReminder,
+    markReminderSent,
 } from '@/lib/services/appointments';
 
 // ---------------------------------------------------------------------------
@@ -383,5 +385,51 @@ describe('getAvailableSlots', () => {
         // Slots from 08:00 to 15:00 = 14 slots
         expect(slots.length).toBeLessThan(18);
         expect(slots.length).toBeGreaterThan(0);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getAppointmentsDueForReminder
+// ---------------------------------------------------------------------------
+
+describe('getAppointmentsDueForReminder', () => {
+    it('returns appointments in the 23–25 hour reminder window', async () => {
+        const row = makeAppt({ reminder_sent: false });
+        mockSql.mockResolvedValueOnce([row]);
+        const result = await getAppointmentsDueForReminder();
+        expect(result).toHaveLength(1);
+        expect(mockSql).toHaveBeenCalledOnce();
+    });
+
+    it('returns an empty array when no appointments are in the window', async () => {
+        mockSql.mockResolvedValueOnce([]);
+        const result = await getAppointmentsDueForReminder();
+        expect(result).toHaveLength(0);
+    });
+
+    it('includes joined patient fields (email, firstname, lastname)', async () => {
+        const row = makeAppt({ email: 'john.doe@example.com', firstname: 'John', lastname: 'Doe' });
+        mockSql.mockResolvedValueOnce([row]);
+        const [appt] = await getAppointmentsDueForReminder();
+        expect(appt).toHaveProperty('email', 'john.doe@example.com');
+        expect(appt).toHaveProperty('firstname', 'John');
+        expect(appt).toHaveProperty('lastname', 'Doe');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// markReminderSent
+// ---------------------------------------------------------------------------
+
+describe('markReminderSent', () => {
+    it('executes an UPDATE without throwing', async () => {
+        mockSql.mockResolvedValueOnce([]);
+        await expect(markReminderSent(APPT_ID)).resolves.not.toThrow();
+        expect(mockSql).toHaveBeenCalledOnce();
+    });
+
+    it('propagates DB errors', async () => {
+        mockSql.mockRejectedValueOnce(new Error('DB connection lost'));
+        await expect(markReminderSent(APPT_ID)).rejects.toThrow('DB connection lost');
     });
 });

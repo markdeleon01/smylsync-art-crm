@@ -76,7 +76,7 @@ export async function sendReschedulingNotification(
         await transporter.sendMail({
             from: process.env.SMTP_FROM,
             to: patientEmail,
-            subject: 'Appointment Rescheduled – SmylSync Dental',
+            subject: `Appointment Rescheduled – ${process.env.SMTP_FROM_NAME}`,
             html: `
                 <p>Dear ${firstName} ${lastName},</p>
                 <p>Your appointment has been rescheduled. Here are your updated details:</p>
@@ -86,7 +86,7 @@ export async function sendReschedulingNotification(
                     <li><strong>New End Time:</strong> ${formatDateTime(appointment.end_time)}</li>
                 </ul>
                 <p>If this does not look correct, please contact us immediately.</p>
-                <p>Thank you,<br/>SmylSync Dental</p>
+                <p>Thank you,<br/>${process.env.SMTP_FROM_NAME}</p>
             `,
         });
     } catch (err) {
@@ -109,7 +109,7 @@ export async function sendCancellationNotice(
         await transporter.sendMail({
             from: process.env.SMTP_FROM,
             to: patientEmail,
-            subject: 'Appointment Cancellation – SmylSync Dental',
+            subject: `Appointment Cancellation – ${process.env.SMTP_FROM_NAME}`,
             html: `
                 <p>Dear ${firstName} ${lastName},</p>
                 <p>Your appointment has been cancelled. Details of the cancelled appointment:</p>
@@ -118,7 +118,7 @@ export async function sendCancellationNotice(
                     <li><strong>Original Date &amp; Time:</strong> ${formatDateTime(appointment.start_time)}</li>
                 </ul>
                 <p>Please contact us to reschedule at your earliest convenience.</p>
-                <p>Thank you,<br/>SmylSync Dental</p>
+                <p>Thank you,<br/>${process.env.SMTP_FROM_NAME}</p>
             `,
         });
     } catch (err) {
@@ -141,7 +141,7 @@ export async function sendReminderEmail(
         await transporter.sendMail({
             from: process.env.SMTP_FROM,
             to: patientEmail,
-            subject: 'Appointment Reminder – SmylSync Dental',
+            subject: `Appointment Reminder – ${process.env.SMTP_FROM_NAME}`,
             html: `
                 <p>Dear ${firstName} ${lastName},</p>
                 <p>This is a friendly reminder that you have an appointment scheduled for <strong>tomorrow</strong>:</p>
@@ -152,7 +152,7 @@ export async function sendReminderEmail(
                 </ul>
                 <p>If you need to reschedule or cancel, please contact us as soon as possible.</p>
                 <p>We look forward to seeing you!</p>
-                <p>Thank you,<br/>SmylSync Dental</p>
+                <p>Thank you,<br/>${process.env.SMTP_FROM_NAME}</p>
             `,
         });
     } catch (err) {
