@@ -131,11 +131,11 @@ describe('lib/email – sends mail when SMTP_HOST is configured', () => {
         expect(mailOptions.html).toContain('tomorrow');
     });
 
-    it('sendBookingConfirmation does not throw when sendMail rejects (swallows error)', async () => {
+    it('sendBookingConfirmation re-throws when sendMail rejects', async () => {
         mockSendMail.mockRejectedValueOnce(new Error('SMTP timeout'));
         const { sendBookingConfirmation } = await importEmail();
         await expect(
             sendBookingConfirmation(APPT, 'Jane', 'Doe', 'jane@example.com')
-        ).resolves.not.toThrow();
+        ).rejects.toThrow('SMTP timeout');
     });
 });
