@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         const response = streamText({
             model: openai('gpt-5-nano'),
             tools,
-            stopWhen: stepCountIs(3),
+            stopWhen: stepCountIs(5), // allow up to 4 tool calls before final text response
             system: systemPrompt,
             messages: conversationMessages,
             onStepFinish: ({ toolCalls, toolResults: stepResults }) => {
