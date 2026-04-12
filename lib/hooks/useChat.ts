@@ -62,6 +62,7 @@ export function useChat(options?: UseChatOptions) {
                     body: JSON.stringify({
                         message: userMessage,
                         history: messagesSnapshot,
+                        localDate: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD in client's local timezone
                     }),
                 });
 

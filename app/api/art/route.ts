@@ -10,7 +10,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 // import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp';
 
 export async function POST(req: Request) {
-    const { message, history = [] }: { message: string; history: { role: 'user' | 'assistant'; content: string }[] } = await req.json();
+    const { message, history = [], localDate }: { message: string; history: { role: 'user' | 'assistant'; content: string }[]; localDate?: string } = await req.json();
 
     if (!process.env.OPENAI_API_KEY) {
         console.error('OPENAI_API_KEY environment variable is not set');
@@ -87,6 +87,7 @@ export async function POST(req: Request) {
 
         const systemPrompt = `Your name is ART, SMYLSYNC's internal operations agent capable of running tools.  Use the available tools to answer the prompt.  
         Be precise and answer the prompt directly using tools when possible.  Only run tools that are available.  You can only do things or answer questions based on the available tools.
+        The user's current local date is ${localDate ?? new Date().toLocaleDateString('en-CA')}. Always use this date when the user refers to "today" or requests today's appointments or available slots.
         - If the user asks a question that could be answered by a tool:  Ask for confirmation to use the tool.\n
         - If user asks a general question and has not opted-in to tool use:  you must respond with a redirect + yes/no question.\n
         - If a tool requires confirmation and user declines, you must respond with a redirect: "Okay, is there anything else I can help you with?"\n
