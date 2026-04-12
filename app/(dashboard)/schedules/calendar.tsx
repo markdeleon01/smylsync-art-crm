@@ -883,7 +883,7 @@ export function SchedulesCalendar() {
     sessionStorage.setItem('schedules-view', view);
     sessionStorage.setItem(
       'schedules-filters',
-      JSON.stringify([...activeFilters])
+      JSON.stringify(Array.from(activeFilters))
     );
   }, [view, activeFilters]);
 
