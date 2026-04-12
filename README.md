@@ -159,24 +159,24 @@ pnpm run test:coverage     # Generate coverage reports
 
 **Test Files:**
 
-| Test File                              | Tests  | Coverage                                          |
-| -------------------------------------- | ------ | ------------------------------------------------- |
-| `lib/services/appointments.test.ts`    | 35     | Booking, rebooking, cancellation, availability    |
-| `app/(dashboard)/patients/patients-list.test.tsx` | 49 | Rendering, search, sort, badges, bubble, persistence |
-| `app/api/[transport]/route.test.ts`    | 30     | MCP server tools — patients & appointments        |
-| `lib/services/patients.test.ts`        | 12     | Patient CRUD operations                           |
-| `components/art/index.test.tsx`        | 21     | Toggle, messages, persistence, accessibility      |
-| `app/api/reminders/route.test.ts`      | 8      | Auth guard, reminder dispatch, edge cases         |
-| `lib/services/email.test.ts`           | 9      | Email sending, SMTP fallback                      |
-| `app/(dashboard)/patients/page.test.tsx` | 11   | Page loading, content structure                   |
-| `app/(dashboard)/loading-spinner.test.tsx` | 7  | Spinner rendering and accessibility               |
-| `app/(dashboard)/schedules/actions.test.ts` | 19 | Server actions for calendar data                 |
-| `app/(dashboard)/schedules/page.test.tsx` | 5   | Schedules page rendering                         |
-| `app/(dashboard)/page.test.tsx`        | 6      | Dashboard home rendering                          |
-| `app/login/page.test.tsx`              | 6      | Auth UI, form structure                           |
-| `app/api/patients/route.test.ts`       | 3      | Patients API GET/POST                             |
-| `app/api/patients/[id]/route.test.ts`  | 3      | Patients API GET/PATCH/DELETE by ID               |
-| **Total**                              | **224**| **All major components, routes, and services**   |
+| Test File                                         | Tests   | Coverage                                             |
+| ------------------------------------------------- | ------- | ---------------------------------------------------- |
+| `lib/services/appointments.test.ts`               | 35      | Booking, rebooking, cancellation, availability       |
+| `app/(dashboard)/patients/patients-list.test.tsx` | 49      | Rendering, search, sort, badges, bubble, persistence |
+| `app/api/[transport]/route.test.ts`               | 30      | MCP server tools — patients & appointments           |
+| `lib/services/patients.test.ts`                   | 12      | Patient CRUD operations                              |
+| `components/art/index.test.tsx`                   | 21      | Toggle, messages, persistence, accessibility         |
+| `app/api/reminders/route.test.ts`                 | 8       | Auth guard, reminder dispatch, edge cases            |
+| `lib/services/email.test.ts`                      | 9       | Email sending, SMTP fallback                         |
+| `app/(dashboard)/patients/page.test.tsx`          | 11      | Page loading, content structure                      |
+| `app/(dashboard)/loading-spinner.test.tsx`        | 7       | Spinner rendering and accessibility                  |
+| `app/(dashboard)/schedules/actions.test.ts`       | 19      | Server actions for calendar data                     |
+| `app/(dashboard)/schedules/page.test.tsx`         | 5       | Schedules page rendering                             |
+| `app/(dashboard)/page.test.tsx`                   | 6       | Dashboard home rendering                             |
+| `app/login/page.test.tsx`                         | 6       | Auth UI, form structure                              |
+| `app/api/patients/route.test.ts`                  | 3       | Patients API GET/POST                                |
+| `app/api/patients/[id]/route.test.ts`             | 3       | Patients API GET/PATCH/DELETE by ID                  |
+| **Total**                                         | **224** | **All major components, routes, and services**       |
 
 **Test Configuration:**
 
@@ -203,17 +203,17 @@ pnpm run cypress:open   # in another terminal
 
 **Test Coverage:**
 
-| Test Suite        | Tests   | Type                                             |
-| ----------------- | ------- | ------------------------------------------------ |
-| Schedules         | 42      | Calendar views, navigation, appointment display  |
-| Patients          | 32      | List, search, sort, appointment badges, bubble   |
-| Dashboard         | 13      | Content, navigation menu, layout                 |
-| Accessibility     | 6       | Semantic HTML, ARIA, alt text                    |
-| Navigation        | 8       | Menu structure, responsive sidebar               |
-| Login             | 5       | Form interaction, redirect                       |
-| Not Found / 404   | 4       | Graceful fallback for unimplemented routes       |
-| Chatbot           | 4       | ART component rendering and positioning          |
-| **Total**         | **114** | **All implemented pages and key user flows**     |
+| Test Suite      | Tests   | Type                                            |
+| --------------- | ------- | ----------------------------------------------- |
+| Schedules       | 42      | Calendar views, navigation, appointment display |
+| Patients        | 32      | List, search, sort, appointment badges, bubble  |
+| Dashboard       | 13      | Content, navigation menu, layout                |
+| Accessibility   | 6       | Semantic HTML, ARIA, alt text                   |
+| Navigation      | 8       | Menu structure, responsive sidebar              |
+| Login           | 5       | Form interaction, redirect                      |
+| Not Found / 404 | 4       | Graceful fallback for unimplemented routes      |
+| Chatbot         | 4       | ART component rendering and positioning         |
+| **Total**       | **114** | **All implemented pages and key user flows**    |
 
 **Configuration:**
 
@@ -241,18 +241,22 @@ The pipeline runs automatically on every push to the repository.
 The pipeline executes 5 interconnected jobs:
 
 1. **install-and-cache** (1-2 minutes)
+
    - Installs pnpm dependencies and caches `node_modules`
    - Node.js 20.11
 
 2. **unit-tests** (2-4 minutes, runs after install-and-cache)
+
    - Executes all 224 Vitest tests
    - Stores test results and coverage reports
    - Artifacts: `test-results/`, `coverage/`
 
 3. **type-check** (30-60 seconds, parallel with unit-tests)
+
    - TypeScript verification with `tsc --noEmit`
 
 4. **build** (2-3 minutes, requires unit-tests + type-check)
+
    - Compiles the Next.js application
    - Caches `.next` directory by commit SHA
 
@@ -282,6 +286,7 @@ install-and-cache
 ### Setup Instructions
 
 1. **Connect Repository to CircleCI:**
+
    - Go to [CircleCI](https://circleci.com) and sign in with GitHub
    - Click "Setup project" and select this repository
    - Choose "Fastest" (uses existing `.circleci/config.yml`)

@@ -14,6 +14,7 @@ function createTransporter() {
 }
 
 function formatDateTime(iso: string): string {
+    const timeZone = process.env.CLINIC_TIMEZONE ?? 'Asia/Manila';
     return new Date(iso).toLocaleString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -21,6 +22,8 @@ function formatDateTime(iso: string): string {
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone,
+        timeZoneName: 'short',
     });
 }
 
