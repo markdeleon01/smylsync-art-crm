@@ -109,8 +109,8 @@ export function PatientsList({ patients, appointments }: Props) {
   // Save — listed FIRST so it runs before the load effect on initial render
   useEffect(() => {
     if (!hasLoaded.current) return;
-    localStorage.setItem('patients-sort-col', sortCol);
-    localStorage.setItem('patients-sort-dir', sortDir);
+    sessionStorage.setItem('patients-sort-col', sortCol);
+    sessionStorage.setItem('patients-sort-dir', sortDir);
   }, [sortCol, sortDir]);
 
   // Load — listed SECOND; sets hasLoaded=true at the end.
@@ -120,8 +120,8 @@ export function PatientsList({ patients, appointments }: Props) {
   // initial state values to localStorage before we have a chance to hydrate
   // from localStorage again.
   useEffect(() => {
-    const savedCol = localStorage.getItem('patients-sort-col');
-    const savedDir = localStorage.getItem('patients-sort-dir');
+    const savedCol = sessionStorage.getItem('patients-sort-col');
+    const savedDir = sessionStorage.getItem('patients-sort-dir');
     if (savedCol) setSortCol(savedCol as SortCol);
     if (savedDir === 'asc' || savedDir === 'desc') setSortDir(savedDir);
     const savedSearch = sessionStorage.getItem('patients-search');

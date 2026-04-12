@@ -43,7 +43,7 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem('token', data.token);
+      sessionStorage.setItem('token', data.token);
       // Bust the Next.js router cache so server components re-render with the
       // new cookie, then navigate. Keep isLoading=true so no re-render races
       // with the pending navigation.

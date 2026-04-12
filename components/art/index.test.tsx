@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ArtBot from './index';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ChatSidebarContext } from '@/lib/chat-context';
+import { useChat } from '@/lib/hooks/useChat';
 
 // Mock the useChat hook
 vi.mock('@/lib/hooks/useChat', () => ({
@@ -17,7 +18,7 @@ vi.mock('@/lib/hooks/useChat', () => ({
   }))
 }));
 
-// Mock localStorage
+// Mock sessionStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
 
@@ -35,7 +36,7 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, 'sessionStorage', {
   value: localStorageMock
 });
 
@@ -73,12 +74,12 @@ const renderArtBot = (initialOpen = false) =>
 
 describe('ArtBot Component', () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   describe('Rendering', () => {
@@ -159,12 +160,61 @@ describe('ArtBot Component', () => {
   });
 
   describe('Welcome Message', () => {
-    it('should display welcome message when chat is open with no messages', () => {
+    it('should display greeting when chat is open with no messages', () => {
       renderArtBot(true);
-      expect(screen.getByText('Welcome to ART')).toBeInTheDocument();
+      expect(screen.getByText("Hi, I'm ART")).toBeInTheDocument();
+    });
+
+    it('should display capability description on initial load', () => {
+      renderArtBot(true);
       expect(
-        screen.getByText('Start a conversation to get help')
+        screen.getByText(/SMYLSYNC's AI internal operations assistant/i)
       ).toBeInTheDocument();
+    });
+
+    it('should display Quick actions heading', () => {
+      renderArtBot(true);
+      expect(screen.getByText('Quick actions')).toBeInTheDocument();
+    });
+
+    it('should render all quick action buttons', () => {
+      renderArtBot(true);
+      expect(
+        screen.getByRole('button', { name: 'Look up a patient' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Book an appointment' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: "View today's appointments" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Check available time slots' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Add a new patient' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Send a reminder email' })
+      ).toBeInTheDocument();
+    });
+
+    it('should call sendMessage with the correct prompt when a quick action is clicked', () => {
+      const mockSendMessage = vi.fn();
+      vi.mocked(useChat).mockReturnValue({
+        messages: [],
+        isLoading: false,
+        error: null,
+        sendMessage: mockSendMessage,
+        setMessages: vi.fn(),
+        toolsExecuted: false
+      });
+
+      renderArtBot(true);
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Look up a patient' })
+      );
+      expect(mockSendMessage).toHaveBeenCalledWith('Show me all patients');
     });
   });
 
@@ -222,15 +272,15 @@ describe('ArtBot Component', () => {
     });
   });
 
-  describe('localStorage', () => {
-    it('should persist messages to localStorage when messages exist', () => {
+  describe('sessionStorage', () => {
+    it('should persist messages to sessionStorage when messages exist', () => {
       renderArtBot(true);
       // Messages storage key starts empty
-      expect(localStorage.getItem('art-chatbot-messages')).toBeNull();
+      expect(sessionStorage.getItem('art-chatbot-messages')).toBeNull();
     });
 
     it('should have storage key for messages initially empty', () => {
-      expect(localStorage.getItem('art-chatbot-messages')).toBeNull();
+      expect(sessionStorage.getItem('art-chatbot-messages')).toBeNull();
     });
   });
 

@@ -571,9 +571,9 @@ describe('PatientsList – phone display', () => {
 // Sort order – sessionStorage persistence
 // ---------------------------------------------------------------------------
 
-describe('PatientsList – sort persistence (localStorage)', () => {
-  beforeEach(() => localStorage.clear());
-  afterEach(() => localStorage.clear());
+describe('PatientsList – sort persistence (sessionStorage)', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
 
   const patients = [
     makePatient({
@@ -590,7 +590,7 @@ describe('PatientsList – sort persistence (localStorage)', () => {
     })
   ];
 
-  it('defaults to last-name ascending when localStorage has no saved value', () => {
+  it('defaults to last-name ascending when sessionStorage has no saved value', () => {
     const { container } = render(
       <PatientsList patients={patients} appointments={[]} />
     );
@@ -601,9 +601,9 @@ describe('PatientsList – sort persistence (localStorage)', () => {
     expect(adamsIdx).toBeLessThan(zimmermanIdx);
   });
 
-  it('initialises sort column and direction from localStorage when values are saved', () => {
-    localStorage.setItem('patients-sort-col', 'firstname');
-    localStorage.setItem('patients-sort-dir', 'asc');
+  it('initialises sort column and direction from sessionStorage when values are saved', () => {
+    sessionStorage.setItem('patients-sort-col', 'firstname');
+    sessionStorage.setItem('patients-sort-dir', 'asc');
     const { container } = render(
       <PatientsList patients={patients} appointments={[]} />
     );
@@ -614,13 +614,13 @@ describe('PatientsList – sort persistence (localStorage)', () => {
     expect(aliceIdx).toBeLessThan(charlieIdx);
   });
 
-  it('writes the sort column and direction to localStorage when a column header is clicked', () => {
+  it('writes the sort column and direction to sessionStorage when a column header is clicked', () => {
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.click(
       screen.getByRole('button', { name: /Sort by First Name/i })
     );
-    expect(localStorage.getItem('patients-sort-col')).toBe('firstname');
-    expect(localStorage.getItem('patients-sort-dir')).toBe('asc');
+    expect(sessionStorage.getItem('patients-sort-col')).toBe('firstname');
+    expect(sessionStorage.getItem('patients-sort-dir')).toBe('asc');
   });
 });
 

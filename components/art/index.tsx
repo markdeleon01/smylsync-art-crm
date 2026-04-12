@@ -35,10 +35,10 @@ export default function ArtBot() {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load persisted messages from localStorage
+  // Load persisted messages from sessionStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedMessages = localStorage.getItem(STORAGE_KEY);
+      const savedMessages = sessionStorage.getItem(STORAGE_KEY);
       if (savedMessages) {
         try {
           const parsed = JSON.parse(savedMessages);
@@ -54,7 +54,7 @@ export default function ArtBot() {
   // Persist messages whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined' && messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -94,7 +94,7 @@ export default function ArtBot() {
   // Reload page after tool execution completes, and notify other components
   useEffect(() => {
     if (!isLoading && toolsExecuted && messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
       window.dispatchEvent(new CustomEvent('art:tools-executed'));
       const reloadTimer = setTimeout(() => {
         window.location.reload();
@@ -163,9 +163,69 @@ export default function ArtBot() {
           {/* Messages Container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && !isLoading && (
-              <div className="text-center text-sm text-gray-500 mt-4">
-                <p className="font-semibold mb-1">Welcome to ART</p>
-                <p>Start a conversation to get help</p>
+              <div className="flex flex-col gap-4 mt-1">
+                <div
+                  className="rounded-lg p-4"
+                  style={{
+                    backgroundColor: '#FFF8ED',
+                    border: '1px solid #FFD580'
+                  }}
+                >
+                  <p
+                    className="font-semibold text-sm mb-1"
+                    style={{ color: CHATBOT_ORANGE }}
+                  >
+                    Hi, I&apos;m ART
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    I am SMYLSYNC&apos;s AI internal operations assistant. I can help
+                    you manage patients, appointments, schedules, and send email
+                    notifications.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">
+                    Quick actions
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      {
+                        label: 'Look up a patient',
+                        prompt: 'Show me all patients'
+                      },
+                      {
+                        label: 'Book an appointment',
+                        prompt: 'I need to book an appointment for a patient'
+                      },
+                      {
+                        label: "View today's appointments",
+                        prompt: 'What appointments are scheduled for today?'
+                      },
+                      {
+                        label: 'Check available time slots',
+                        prompt: 'What time slots are available today?'
+                      },
+                      {
+                        label: 'Add a new patient',
+                        prompt: 'I need to add a new patient'
+                      },
+                      {
+                        label: 'Send a reminder email',
+                        prompt: 'I need to send a reminder email to a patient'
+                      }
+                    ].map(({ label, prompt }) => (
+                      <button
+                        key={label}
+                        onClick={() => sendMessage(prompt)}
+                        disabled={isLoading}
+                        className="text-left w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:border-orange-300 hover:bg-orange-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-300 disabled:opacity-50"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

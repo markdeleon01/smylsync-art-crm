@@ -706,6 +706,7 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
 
 export function SchedulesCalendar() {
   const [view, setView] = useState<'week' | 'month' | 'day'>('week');
+  const hasLoaded = useRef(false);
 
   // --- Live current-time indicator ---
   const calcNowTopPx = (): number | null => {
@@ -874,6 +875,39 @@ export function SchedulesCalendar() {
   // --- Week view derived data ---
   // --- Type filter (multi-select) ---
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+
+  // Persist view + filters to sessionStorage (cleared on sign-out)
+  // Save effect listed FIRST — skips until load has hydrated state
+  useEffect(() => {
+    if (!hasLoaded.current) return;
+    sessionStorage.setItem('schedules-view', view);
+    sessionStorage.setItem(
+      'schedules-filters',
+      JSON.stringify([...activeFilters])
+    );
+  }, [view, activeFilters]);
+
+  // Load effect listed SECOND — restores saved values, then sets hasLoaded=true.
+  // Cleanup resets the flag so StrictMode's unmount→remount is handled correctly.
+  useEffect(() => {
+    const savedView = sessionStorage.getItem('schedules-view');
+    if (savedView === 'day' || savedView === 'week' || savedView === 'month') {
+      setView(savedView);
+    }
+    const savedFilters = sessionStorage.getItem('schedules-filters');
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (Array.isArray(parsed)) setActiveFilters(new Set(parsed));
+      } catch {
+        // ignore malformed value
+      }
+    }
+    hasLoaded.current = true;
+    return () => {
+      hasLoaded.current = false;
+    };
+  }, []);
 
   const toggleFilter = (type: string) =>
     setActiveFilters((prev) => {
