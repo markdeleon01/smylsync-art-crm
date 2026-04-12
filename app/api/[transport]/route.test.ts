@@ -491,3 +491,220 @@ describe('MCP tool – send_cancellation_notice', () => {
         expect(result.content[0].text).toContain('SMTP failure');
     });
 });
+
+// ── Error-path tests for patient read tools ────────────────────────────────
+
+describe('MCP tool – get_all_patients (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getAllPatients throws', async () => {
+        mockGetAllPatients.mockRejectedValue(new Error('DB connection lost'));
+        const result = await callTool('get_all_patients') as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB connection lost');
+    });
+});
+
+describe('MCP tool – get_patient_by_id (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getPatientById throws', async () => {
+        mockGetPatientById.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_patient_by_id', { id: 'p-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+describe('MCP tool – get_patients_by_lastname (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getPatientsByLastName throws', async () => {
+        mockGetPatientsByLastName.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_patients_by_lastname', { lastname: 'Doe' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+describe('MCP tool – get_patients_by_firstname (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getPatientsByFirstName throws', async () => {
+        mockGetPatientsByFirstName.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_patients_by_firstname', { firstname: 'Jane' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+describe('MCP tool – get_patient_by_email (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getPatientByEmail throws', async () => {
+        mockGetPatientByEmail.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_patient_by_email', { email: 'jane@example.com' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+// ── Error-path tests for patient write tools ───────────────────────────────
+
+describe('MCP tool – update_patient_firstname (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when updatePatientFirstName throws', async () => {
+        mockUpdatePatientFirstName.mockRejectedValue(new Error('Patient not found'));
+        const result = await callTool('update_patient_firstname', { id: 'p-1', firstname: 'Jane' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Patient not found');
+    });
+});
+
+describe('MCP tool – update_patient_lastname (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when updatePatientLastName throws', async () => {
+        mockUpdatePatientLastName.mockRejectedValue(new Error('Patient not found'));
+        const result = await callTool('update_patient_lastname', { id: 'p-1', lastname: 'Doe' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Patient not found');
+    });
+});
+
+describe('MCP tool – update_patient_email (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when updatePatientEmail throws', async () => {
+        mockUpdatePatientEmail.mockRejectedValue(new Error('Email already in use'));
+        const result = await callTool('update_patient_email', { id: 'p-1', email: 'new@example.com' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Email already in use');
+    });
+});
+
+describe('MCP tool – update_patient_phone (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when updatePatientPhone throws', async () => {
+        mockUpdatePatientPhone.mockRejectedValue(new Error('Patient not found'));
+        const result = await callTool('update_patient_phone', { id: 'p-1', phone: '555-0000' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Patient not found');
+    });
+});
+
+describe('MCP tool – create_new_patient (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when createPatient throws', async () => {
+        mockCreatePatient.mockRejectedValue(new Error('Duplicate email'));
+        const result = await callTool('create_new_patient', {
+            firstname: 'Jane', lastname: 'Doe', email: 'jane@example.com'
+        }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Duplicate email');
+    });
+});
+
+describe('MCP tool – delete_patient_by_id (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when deletePatientById throws', async () => {
+        mockDeletePatientById.mockRejectedValue(new Error('Patient not found'));
+        const result = await callTool('delete_patient_by_id', { id: 'p-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Patient not found');
+    });
+});
+
+describe('MCP tool – delete_patient_by_lastname (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when deletePatientByLastName throws', async () => {
+        mockDeletePatientByLastName.mockRejectedValue(new Error('DB error'));
+        const result = await callTool('delete_patient_by_lastname', { lastname: 'Doe' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB error');
+    });
+});
+
+describe('MCP tool – delete_patient_by_firstname (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when deletePatientByFirstName throws', async () => {
+        mockDeletePatientByFirstName.mockRejectedValue(new Error('DB error'));
+        const result = await callTool('delete_patient_by_firstname', { firstname: 'Jane' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB error');
+    });
+});
+
+describe('MCP tool – delete_patient_by_email (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when deletePatientByEmail throws', async () => {
+        mockDeletePatientByEmail.mockRejectedValue(new Error('DB error'));
+        const result = await callTool('delete_patient_by_email', { email: 'jane@example.com' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB error');
+    });
+});
+
+// ── Error-path tests for appointment read tools ────────────────────────────
+
+describe('MCP tool – get_all_appointments (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getAllAppointments throws', async () => {
+        mockGetAllAppointments.mockRejectedValue(new Error('DB connection lost'));
+        const result = await callTool('get_all_appointments') as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB connection lost');
+    });
+});
+
+describe('MCP tool – get_appointment_by_id (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getAppointmentById throws', async () => {
+        mockGetAppointmentById.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_appointment_by_id', { id: 'appt-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+describe('MCP tool – get_appointments_by_patient (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getAppointmentsByPatientId throws', async () => {
+        mockGetAppointmentsByPatientId.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_appointments_by_patient', { patient_id: 'p-1' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+describe('MCP tool – get_appointments_by_date (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getAppointmentsOnDate throws', async () => {
+        mockGetAppointmentsOnDate.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_appointments_by_date', { date: '2026-06-01' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});
+
+describe('MCP tool – get_available_slots (error path)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns isError when getAvailableSlots throws', async () => {
+        mockGetAvailableSlots.mockRejectedValue(new Error('DB timeout'));
+        const result = await callTool('get_available_slots', { date: '2026-06-01' }) as any;
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('DB timeout');
+    });
+});

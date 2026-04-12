@@ -60,17 +60,22 @@ function createMcpServer() {
             annotations: { readOnlyHint: true },
         },
         async () => {
-            const patients = await getAllPatients();
-            let patientsInfos = '';
-            if (patients.length > 0) {
-                patientsInfos += `All patients information retrieved successfully.\n\n`;
-                for (const patient of patients) {
-                    patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+            try {
+                const patients = await getAllPatients();
+                let patientsInfos = '';
+                if (patients.length > 0) {
+                    patientsInfos += `All patients information retrieved successfully.\n\n`;
+                    for (const patient of patients) {
+                        patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    patientsInfos += `No patients were found.`;
                 }
-            } else {
-                patientsInfos += `No patients were found.`;
+                return { content: [{ type: "text", text: patientsInfos }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve patients: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: patientsInfos }] };
         }
     );
 
@@ -83,14 +88,19 @@ function createMcpServer() {
             annotations: { readOnlyHint: true },
         },
         async ({ id }: { id: string }) => {
-            const patient = await getPatientById(id);
-            let patientInfo = '';
-            if (patient) {
-                patientInfo = `Patient with id '${id}' information retrieved successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
-            } else {
-                patientInfo = `No patient with id '${id}' was found.`;
+            try {
+                const patient = await getPatientById(id);
+                let patientInfo = '';
+                if (patient) {
+                    patientInfo = `Patient with id '${id}' information retrieved successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
+                } else {
+                    patientInfo = `No patient with id '${id}' was found.`;
+                }
+                return { content: [{ type: "text", text: patientInfo }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve patient: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: patientInfo }] };
         }
     );
 
@@ -103,17 +113,22 @@ function createMcpServer() {
             annotations: { readOnlyHint: true },
         },
         async ({ lastname }: { lastname: string }) => {
-            const patients = await getPatientsByLastName(lastname);
-            let patientsInfos = '';
-            if (patients.length > 0) {
-                patientsInfos += `All patients with last name '${lastname}' information retrieved successfully.\n\n`;
-                for (const patient of patients) {
-                    patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+            try {
+                const patients = await getPatientsByLastName(lastname);
+                let patientsInfos = '';
+                if (patients.length > 0) {
+                    patientsInfos += `All patients with last name '${lastname}' information retrieved successfully.\n\n`;
+                    for (const patient of patients) {
+                        patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    patientsInfos = `No patients were found.`;
                 }
-            } else {
-                patientsInfos = `No patients were found.`;
+                return { content: [{ type: "text", text: patientsInfos }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve patients: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: patientsInfos }] };
         }
     );
 
@@ -126,17 +141,22 @@ function createMcpServer() {
             annotations: { readOnlyHint: true },
         },
         async ({ firstname }: { firstname: string }) => {
-            const patients = await getPatientsByFirstName(firstname);
-            let patientsInfos = '';
-            if (patients.length > 0) {
-                patientsInfos += `All patients with first name '${firstname}' information retrieved successfully.\n\n`;
-                for (const patient of patients) {
-                    patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+            try {
+                const patients = await getPatientsByFirstName(firstname);
+                let patientsInfos = '';
+                if (patients.length > 0) {
+                    patientsInfos += `All patients with first name '${firstname}' information retrieved successfully.\n\n`;
+                    for (const patient of patients) {
+                        patientsInfos += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    patientsInfos = `No patients were found.`;
                 }
-            } else {
-                patientsInfos = `No patients were found.`;
+                return { content: [{ type: "text", text: patientsInfos }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve patients: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: patientsInfos }] };
         }
     );
 
@@ -149,14 +169,19 @@ function createMcpServer() {
             annotations: { readOnlyHint: true },
         },
         async ({ email }: { email: string }) => {
-            const patient = await getPatientByEmail(email);
-            let patientInfo = '';
-            if (patient) {
-                patientInfo = `Patient with email '${email}' information retrieved successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
-            } else {
-                patientInfo = `No patient with email '${email}' was found.`;
+            try {
+                const patient = await getPatientByEmail(email);
+                let patientInfo = '';
+                if (patient) {
+                    patientInfo = `Patient with email '${email}' information retrieved successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
+                } else {
+                    patientInfo = `No patient with email '${email}' was found.`;
+                }
+                return { content: [{ type: "text", text: patientInfo }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve patient: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: patientInfo }] };
         }
     );
 
@@ -169,8 +194,13 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ id, firstname }: { id: string; firstname: string }) => {
-            const updatedPatient = await updatePatientFirstName(id, firstname);
-            return { content: [{ type: "text", text: `Patient first name updated successfully.\nPatient ID: ${updatedPatient.id}\nNew First Name: ${updatedPatient.firstname}` }] };
+            try {
+                const updatedPatient = await updatePatientFirstName(id, firstname);
+                return { content: [{ type: "text", text: `Patient first name updated successfully.\nPatient ID: ${updatedPatient.id}\nNew First Name: ${updatedPatient.firstname}` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to update patient first name: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -183,8 +213,13 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ id, lastname }: { id: string; lastname: string }) => {
-            const updatedPatient = await updatePatientLastName(id, lastname);
-            return { content: [{ type: "text", text: `Patient last name updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Last Name: ${updatedPatient.lastname}` }] };
+            try {
+                const updatedPatient = await updatePatientLastName(id, lastname);
+                return { content: [{ type: "text", text: `Patient last name updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Last Name: ${updatedPatient.lastname}` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to update patient last name: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -197,8 +232,13 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ id, email }: { id: string; email: string }) => {
-            const updatedPatient = await updatePatientEmail(id, email);
-            return { content: [{ type: "text", text: `Patient email updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Email: ${updatedPatient.email}` }] };
+            try {
+                const updatedPatient = await updatePatientEmail(id, email);
+                return { content: [{ type: "text", text: `Patient email updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Email: ${updatedPatient.email}` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to update patient email: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -211,8 +251,13 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ id, phone }: { id: string; phone: string }) => {
-            const updatedPatient = await updatePatientPhone(id, phone);
-            return { content: [{ type: "text", text: `Patient phone updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Phone: ${updatedPatient.phone}` }] };
+            try {
+                const updatedPatient = await updatePatientPhone(id, phone);
+                return { content: [{ type: "text", text: `Patient phone updated successfully.\nPatient ID: ${updatedPatient.id}\nNew Phone: ${updatedPatient.phone}` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to update patient phone: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -225,8 +270,13 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
         },
         async ({ firstname, lastname, email, phone }: { firstname: string; lastname: string; email: string; phone?: string }) => {
-            const newPatient = await createPatient(firstname, lastname, email, phone);
-            return { content: [{ type: "text", text: `Patient created successfully.\nPatient ID: ${newPatient.id}\nFirst Name: ${newPatient.firstname}\nLast Name: ${newPatient.lastname}\nEmail: ${newPatient.email}\nPhone: ${newPatient.phone ?? 'N/A'}` }] };
+            try {
+                const newPatient = await createPatient(firstname, lastname, email, phone);
+                return { content: [{ type: "text", text: `Patient created successfully.\nPatient ID: ${newPatient.id}\nFirst Name: ${newPatient.firstname}\nLast Name: ${newPatient.lastname}\nEmail: ${newPatient.email}\nPhone: ${newPatient.phone ?? 'N/A'}` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to create patient: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -239,8 +289,13 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ id }: { id: string }) => {
-            const patient = await deletePatientById(id);
-            return { content: [{ type: "text", text: `Patient with id '${id}' deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n` }] };
+            try {
+                const patient = await deletePatientById(id);
+                return { content: [{ type: "text", text: `Patient with id '${id}' deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to delete patient: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -253,17 +308,22 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ lastname }: { lastname: string }) => {
-            const patients = await deletePatientByLastName(lastname);
-            let result = '';
-            if (Array.isArray(patients) && patients.length > 0) {
-                result = `${patients.length} patient(s) with last name '${lastname}' deleted successfully.\n`;
-                for (const patient of patients) {
-                    result += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+            try {
+                const patients = await deletePatientByLastName(lastname);
+                let result = '';
+                if (Array.isArray(patients) && patients.length > 0) {
+                    result = `${patients.length} patient(s) with last name '${lastname}' deleted successfully.\n`;
+                    for (const patient of patients) {
+                        result += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    result = `No patients with last name '${lastname}' were found to delete.`;
                 }
-            } else {
-                result = `No patients with last name '${lastname}' were found to delete.`;
+                return { content: [{ type: "text", text: result }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to delete patients: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: result }] };
         }
     );
 
@@ -276,17 +336,22 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ firstname }: { firstname: string }) => {
-            const patients = await deletePatientByFirstName(firstname);
-            let result = '';
-            if (Array.isArray(patients) && patients.length > 0) {
-                result = `${patients.length} patient(s) with first name '${firstname}' deleted successfully.\n`;
-                for (const patient of patients) {
-                    result += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+            try {
+                const patients = await deletePatientByFirstName(firstname);
+                let result = '';
+                if (Array.isArray(patients) && patients.length > 0) {
+                    result = `${patients.length} patient(s) with first name '${firstname}' deleted successfully.\n`;
+                    for (const patient of patients) {
+                        result += `Patient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n\n`;
+                    }
+                } else {
+                    result = `No patients with first name '${firstname}' were found to delete.`;
                 }
-            } else {
-                result = `No patients with first name '${firstname}' were found to delete.`;
+                return { content: [{ type: "text", text: result }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to delete patients: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: result }] };
         }
     );
 
@@ -299,14 +364,19 @@ function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async ({ email }: { email: string }) => {
-            const patient = await deletePatientByEmail(email);
-            let result = '';
-            if (patient) {
-                result = `Patient with email '${email}' deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
-            } else {
-                result = `No patient with email '${email}' was found to delete.`;
+            try {
+                const patient = await deletePatientByEmail(email);
+                let result = '';
+                if (patient) {
+                    result = `Patient with email '${email}' deleted successfully.\nPatient ID: ${patient.id}\nFirst Name: ${patient.firstname}\nLast Name: ${patient.lastname}\nEmail: ${patient.email}\n`;
+                } else {
+                    result = `No patient with email '${email}' was found to delete.`;
+                }
+                return { content: [{ type: "text", text: result }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to delete patient: ${msg}` }], isError: true };
             }
-            return { content: [{ type: "text", text: result }] };
         }
     );
 
@@ -322,15 +392,20 @@ function createMcpServer() {
             annotations: { readOnlyHint: true }
         },
         async () => {
-            const appointments = await getAllAppointments();
-            if (appointments.length === 0) {
-                return { content: [{ type: "text", text: "No appointments found." }] };
+            try {
+                const appointments = await getAllAppointments();
+                if (appointments.length === 0) {
+                    return { content: [{ type: "text", text: "No appointments found." }] };
+                }
+                let text = `${appointments.length} appointment(s) found.\n\n`;
+                for (const a of appointments) {
+                    text += `Appointment ID: ${a.id}\nPatient: ${a.firstname} ${a.lastname} (${a.patient_id})\nType: ${a.appointment_type}\nStart: ${a.start_time}\nEnd: ${a.end_time}\nStatus: ${a.status}\nNotes: ${a.notes ?? 'None'}\n\n`;
+                }
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve appointments: ${msg}` }], isError: true };
             }
-            let text = `${appointments.length} appointment(s) found.\n\n`;
-            for (const a of appointments) {
-                text += `Appointment ID: ${a.id}\nPatient: ${a.firstname} ${a.lastname} (${a.patient_id})\nType: ${a.appointment_type}\nStart: ${a.start_time}\nEnd: ${a.end_time}\nStatus: ${a.status}\nNotes: ${a.notes ?? 'None'}\n\n`;
-            }
-            return { content: [{ type: "text", text }] };
         }
     );
 
@@ -343,10 +418,15 @@ function createMcpServer() {
             annotations: { readOnlyHint: true }
         },
         async ({ id }: { id: string }) => {
-            const a = await getAppointmentById(id);
-            if (!a) return { content: [{ type: "text", text: `No appointment with id '${id}' was found.` }] };
-            const text = `Appointment ID: ${a.id}\nPatient: ${a.firstname} ${a.lastname} (${a.patient_id})\nType: ${a.appointment_type}\nStart: ${a.start_time}\nEnd: ${a.end_time}\nStatus: ${a.status}\nNotes: ${a.notes ?? 'None'}`;
-            return { content: [{ type: "text", text }] };
+            try {
+                const a = await getAppointmentById(id);
+                if (!a) return { content: [{ type: "text", text: `No appointment with id '${id}' was found.` }] };
+                const text = `Appointment ID: ${a.id}\nPatient: ${a.firstname} ${a.lastname} (${a.patient_id})\nType: ${a.appointment_type}\nStart: ${a.start_time}\nEnd: ${a.end_time}\nStatus: ${a.status}\nNotes: ${a.notes ?? 'None'}`;
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve appointment: ${msg}` }], isError: true };
+            }
         }
     );
 
@@ -359,15 +439,20 @@ function createMcpServer() {
             annotations: { readOnlyHint: true }
         },
         async ({ patient_id }: { patient_id: string }) => {
-            const appointments = await getAppointmentsByPatientId(patient_id);
-            if (appointments.length === 0) {
-                return { content: [{ type: "text", text: `No appointments found for patient '${patient_id}'.` }] };
+            try {
+                const appointments = await getAppointmentsByPatientId(patient_id);
+                if (appointments.length === 0) {
+                    return { content: [{ type: "text", text: `No appointments found for patient '${patient_id}'.` }] };
+                }
+                let text = `${appointments.length} appointment(s) for patient '${patient_id}'.\n\n`;
+                for (const a of appointments) {
+                    text += `ID: ${a.id} | Type: ${a.appointment_type} | Start: ${a.start_time} | Status: ${a.status}\n`;
+                }
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve appointments: ${msg}` }], isError: true };
             }
-            let text = `${appointments.length} appointment(s) for patient '${patient_id}'.\n\n`;
-            for (const a of appointments) {
-                text += `ID: ${a.id} | Type: ${a.appointment_type} | Start: ${a.start_time} | Status: ${a.status}\n`;
-            }
-            return { content: [{ type: "text", text }] };
         }
     );
 
@@ -380,15 +465,20 @@ function createMcpServer() {
             annotations: { readOnlyHint: true }
         },
         async ({ date }: { date: string }) => {
-            const appointments = await getAppointmentsOnDate(date);
-            if (appointments.length === 0) {
-                return { content: [{ type: "text", text: `No appointments found on ${date}.` }] };
+            try {
+                const appointments = await getAppointmentsOnDate(date);
+                if (appointments.length === 0) {
+                    return { content: [{ type: "text", text: `No appointments found on ${date}.` }] };
+                }
+                let text = `${appointments.length} appointment(s) on ${date}.\n\n`;
+                for (const a of appointments) {
+                    text += `ID: ${a.id} | Patient: ${a.firstname} ${a.lastname} | Type: ${a.appointment_type} | Start: ${a.start_time} | Status: ${a.status}\n`;
+                }
+                return { content: [{ type: "text", text }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve appointments: ${msg}` }], isError: true };
             }
-            let text = `${appointments.length} appointment(s) on ${date}.\n\n`;
-            for (const a of appointments) {
-                text += `ID: ${a.id} | Patient: ${a.firstname} ${a.lastname} | Type: ${a.appointment_type} | Start: ${a.start_time} | Status: ${a.status}\n`;
-            }
-            return { content: [{ type: "text", text }] };
         }
     );
 
@@ -401,12 +491,17 @@ function createMcpServer() {
             annotations: { readOnlyHint: true }
         },
         async ({ date, appointment_type }: { date: string; appointment_type?: typeof APPOINTMENT_TYPES[number] }) => {
-            const slots = await getAvailableSlots(date, appointment_type ?? 'checkup');
-            if (slots.length === 0) {
-                return { content: [{ type: "text", text: `No available slots on ${date} for a '${appointment_type ?? 'checkup'}' appointment.` }] };
+            try {
+                const slots = await getAvailableSlots(date, appointment_type ?? 'checkup');
+                if (slots.length === 0) {
+                    return { content: [{ type: "text", text: `No available slots on ${date} for a '${appointment_type ?? 'checkup'}' appointment.` }] };
+                }
+                const formatted = slots.map(s => new Date(s).toISOString()).join('\n');
+                return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found):\n${formatted}` }] };
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return { content: [{ type: "text", text: `Failed to retrieve available slots: ${msg}` }], isError: true };
             }
-            const formatted = slots.map(s => new Date(s).toISOString()).join('\n');
-            return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found):\n${formatted}` }] };
         }
     );
 
