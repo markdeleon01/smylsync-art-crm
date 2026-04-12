@@ -149,14 +149,12 @@ describe('ArtBot Component', () => {
       expect(screen.getByText('Ask ART')).toBeInTheDocument();
     });
 
-    it('should have collapse and close buttons when open', () => {
+    it('should have collapse button when open', () => {
       const { container } = renderArtBot(true);
       const collapseBtn = container.querySelector(
         '[aria-label="Collapse chat sidebar"]'
       );
-      const closeBtn = container.querySelector('[aria-label="End chat"]');
       expect(collapseBtn).toBeInTheDocument();
-      expect(closeBtn).toBeInTheDocument();
     });
   });
 
@@ -254,22 +252,6 @@ describe('ArtBot Component', () => {
     });
   });
 
-  describe('Close Button', () => {
-    it('should close chat and clear messages when close button is clicked', async () => {
-      const { container } = renderArtBot(true);
-      const closeButton = container.querySelector('[aria-label="End chat"]');
-      expect(closeButton).toBeInTheDocument();
-
-      if (closeButton) {
-        fireEvent.click(closeButton);
-        await waitFor(() => {
-          const sidebar = container.querySelector('[aria-hidden="true"]');
-          expect(sidebar).toBeInTheDocument();
-        });
-      }
-    });
-  });
-
   describe('Constants', () => {
     it('should apply orange header styling when open', () => {
       renderArtBot(true);
@@ -296,9 +278,7 @@ describe('ArtBot Component', () => {
       const collapseBtn = container.querySelector(
         '[aria-label="Collapse chat sidebar"]'
       );
-      const closeBtn = container.querySelector('[aria-label="End chat"]');
       expect(collapseBtn).toBeInTheDocument();
-      expect(closeBtn).toBeInTheDocument();
     });
 
     it('should have accessible form structure', () => {

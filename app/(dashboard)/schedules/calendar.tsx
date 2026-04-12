@@ -17,8 +17,8 @@ import { APPOINTMENT_DURATIONS } from '@/lib/types';
 const BUSINESS_START = 8; // 8 AM
 const BUSINESS_END = 20; // 8 PM
 const TOTAL_MINS = (BUSINESS_END - BUSINESS_START) * 60; // 720 min
-const PX_PER_MIN = 1.6; // 48px per 30-min slot
-const COLUMN_HEIGHT = TOTAL_MINS * PX_PER_MIN; // 1152px
+const PX_PER_MIN = 1.0; // 30px per 30-min slot
+const COLUMN_HEIGHT = TOTAL_MINS * PX_PER_MIN; // 720px
 
 const DAY_NAMES = [
   'Monday',
@@ -634,7 +634,7 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
                 const end = new Date(appt.end_time);
                 const topPx = minsFromBusinessStart(start) * PX_PER_MIN;
                 const durationMins = (end.getTime() - start.getTime()) / 60000;
-                const heightPx = Math.max(durationMins * PX_PER_MIN, 36);
+                const heightPx = Math.max(durationMins * PX_PER_MIN, 22);
                 const colorCls =
                   TYPE_COLORS[appt.appointment_type] ??
                   'bg-gray-100 border-gray-400 text-gray-800';
@@ -673,7 +673,7 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
                       {formatAppointmentType(appt.appointment_type)} ·{' '}
                       {formatTime(start)}–{formatTime(end)}
                     </p>
-                    {heightPx > 56 && appt.notes && (
+                    {heightPx > 36 && appt.notes && (
                       <p className="text-[10px] truncate leading-tight opacity-60 mt-0.5">
                         {appt.notes}
                       </p>
@@ -1048,7 +1048,10 @@ export function SchedulesCalendar() {
       {/* ---- WEEK VIEW ---- */}
       {view === 'week' && (
         <>
-          <div className="border rounded-lg overflow-auto bg-background">
+          <div
+            data-testid="week-view"
+            className="border rounded-lg overflow-auto bg-background"
+          >
             {/* Day header */}
             <div
               className="grid border-b"
@@ -1170,7 +1173,7 @@ export function SchedulesCalendar() {
                           <p className="text-[10px] font-semibold truncate leading-tight">
                             {appt.firstname} {appt.lastname}
                           </p>
-                          {heightPx > 36 && (
+                          {heightPx > 24 && (
                             <p className="text-[9px] truncate leading-tight opacity-80">
                               {formatAppointmentType(appt.appointment_type)} ·{' '}
                               {formatTime(start)}

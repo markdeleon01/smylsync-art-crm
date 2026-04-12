@@ -39,10 +39,15 @@ export default function LoginPage() {
 
       if (!response.ok) {
         setError(data.error ?? 'Login failed. Please try again.');
+        setIsLoading(false);
         return;
       }
 
       localStorage.setItem('token', data.token);
+      // Bust the Next.js router cache so server components re-render with the
+      // new cookie, then navigate. Keep isLoading=true so no re-render races
+      // with the pending navigation.
+      router.refresh();
       router.push('/');
     } catch (error: Error | any) {
       if (error.status === 401) {
@@ -50,7 +55,6 @@ export default function LoginPage() {
       } else {
         setError('Network error. Please check your connection and try again.');
       }
-    } finally {
       setIsLoading(false);
     }
   };

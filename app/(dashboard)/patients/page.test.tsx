@@ -102,12 +102,12 @@ describe('Patients Page', () => {
     expect(container.textContent).toContain('Checkup');
   });
 
-  it('shows "No upcoming appointments" when patient has no appointments', async () => {
+  it('shows "None" badge when patient has no appointments', async () => {
     (getAllPatients as any).mockResolvedValue([makeMockPatient()]);
     (getUpcomingScheduledAppointments as any).mockResolvedValue([]);
     const result = await PatientsPage();
     const { container } = render(result as any);
-    expect(container.textContent).toContain('No upcoming appointments');
+    expect(container.textContent).toContain('None');
   });
 
   it('only shows appointments belonging to each patient', async () => {
@@ -134,12 +134,12 @@ describe('Patients Page', () => {
     expect(container.textContent).toContain('(213) 555-0101');
   });
 
-  it('omits the phone field when phone is null', async () => {
+  it('shows em-dash in phone column when phone is null', async () => {
     (getAllPatients as any).mockResolvedValue([
       makeMockPatient({ phone: null })
     ]);
     const result = await PatientsPage();
     const { container } = render(result as any);
-    expect(container.textContent).not.toContain('Phone');
+    expect(container.textContent).toContain('—');
   });
 });

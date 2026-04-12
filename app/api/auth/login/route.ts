@@ -8,6 +8,19 @@ const JWT_SECRET = new TextEncoder().encode(
     process.env.JWT_SECRET ?? 'fallback-secret'
 );
 
+// e.g. SESSION_EXPIRY=8h, 30m, 1d — defaults to 8 hours
+const SESSION_EXPIRY = process.env.SESSION_EXPIRY ?? '8h';
+
+/** Parse a duration string (e.g. "8h", "30m", "1d") into seconds. */
+function parseExpirySeconds(expiry: string): number {
+    const match = expiry.match(/^(\d+)(s|m|h|d)$/);
+    if (!match) return 8 * 60 * 60; // fallback: 8h
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    return value * multipliers[unit];
+}
+
 export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
 
@@ -61,14 +74,14 @@ export async function POST(req: NextRequest) {
         })
             .setProtectedHeader({ alg: 'HS256' })
             .setIssuedAt()
-            .setExpirationTime('8h')
+            .setExpirationTime(SESSION_EXPIRY)
             .sign(JWT_SECRET);
 
         return Response.json(
             { token },
             {
                 headers: {
-                    'Set-Cookie': `token=${token}; HttpOnly; Path=/; Max-Age=${8 * 60 * 60}; SameSite=Lax; Secure`
+                    'Set-Cookie': `token=${token}; HttpOnly; Path=/; Max-Age=${parseExpirySeconds(SESSION_EXPIRY)}; SameSite=Lax; Secure`
                 }
             }
         );

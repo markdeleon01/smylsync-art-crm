@@ -46,8 +46,8 @@ describe('Patients Page', () => {
         cy.request('GET', '/api/patients').then((res) => {
             if (res.body.length > 0) {
                 const patient = res.body[0];
-                // Name is displayed as "Last, First"
-                cy.contains(`${patient.lastname}, ${patient.firstname}`).should('be.visible');
+                cy.contains(patient.firstname).should('be.visible');
+                cy.contains(patient.lastname).should('be.visible');
             }
         });
     });
@@ -274,30 +274,29 @@ describe('Patients Page – search', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Sort dropdown
+// Sort column headers
 // ---------------------------------------------------------------------------
 
-describe('Patients Page – sort dropdown', () => {
+describe('Patients Page – sort column headers', () => {
     beforeEach(() => {
         cy.login();
-        cy.window().then((win) => win.sessionStorage.clear());
+        cy.window().then((win) => win.localStorage.clear());
         cy.visit('/patients');
     });
 
-    it('sort dropdown is present with A-to-Z and Z-to-A options', () => {
-        cy.get('select[aria-label="Sort patients"]').should('be.visible');
-        cy.get('select[aria-label="Sort patients"] option').should('have.length', 2);
-        cy.get('select[aria-label="Sort patients"] option[value="asc"]').should('exist');
-        cy.get('select[aria-label="Sort patients"] option[value="desc"]').should('exist');
+    it('sort column header buttons are present', () => {
+        cy.get('button[aria-label="Sort by Last Name"]').should('be.visible');
+        cy.get('button[aria-label="Sort by First Name"]').should('be.visible');
+        cy.get('button[aria-label="Sort by Email"]').should('be.visible');
     });
 
     it('defaults to last name A-to-Z (asc)', () => {
-        cy.get('select[aria-label="Sort patients"]').should('have.value', 'asc');
+        cy.get('button[aria-label="Sort by Last Name"]').should('contain', '▲');
     });
 
-    it('changes sort order when Z-to-A is selected', () => {
-        cy.get('select[aria-label="Sort patients"]').select('desc');
-        cy.get('select[aria-label="Sort patients"]').should('have.value', 'desc');
+    it('clicking the Last Name column toggles to Z-to-A', () => {
+        cy.get('button[aria-label="Sort by Last Name"]').click();
+        cy.get('button[aria-label="Sort by Last Name"]').should('contain', '▼');
     });
 
     it('Z-to-A puts a later-alphabet last name first', () => {
@@ -307,17 +306,16 @@ describe('Patients Page – sort dropdown', () => {
                 b.lastname.localeCompare(a.lastname)
             );
             const lastFirst = sorted[0].lastname;
-            cy.get('select[aria-label="Sort patients"]').select('desc');
-            // The first patient card on the page should contain the Z-end last name
-            cy.get('main').find('p').contains(lastFirst).should('be.visible');
+            cy.get('button[aria-label="Sort by Last Name"]').click(); // → desc
+            cy.get('tbody tr').first().should('contain', lastFirst);
         });
     });
 
-    it('sort order persists after navigating away and back', () => {
-        cy.get('select[aria-label="Sort patients"]').select('desc');
+    it('sort column and direction persists after navigating away and back', () => {
+        cy.get('button[aria-label="Sort by First Name"]').click(); // sort by firstname asc
         cy.visit('/');
         cy.visit('/patients');
-        cy.get('select[aria-label="Sort patients"]').should('have.value', 'desc');
+        cy.get('button[aria-label="Sort by First Name"]').should('contain', '▲');
     });
 });
 
@@ -331,11 +329,12 @@ describe('Patients Page – card content', () => {
         cy.visit('/patients');
     });
 
-    it('displays names in "Last, First" format', () => {
+    it('displays patient first and last name in separate columns', () => {
         cy.request('GET', '/api/patients').then((res) => {
             if (res.body.length === 0) return;
             const p = res.body[0];
-            cy.contains(`${p.lastname}, ${p.firstname}`).should('be.visible');
+            cy.contains(p.firstname).should('be.visible');
+            cy.contains(p.lastname).should('be.visible');
         });
     });
 

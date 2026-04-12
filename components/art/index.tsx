@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChat, type Message } from '@/lib/hooks/useChat';
-import { X, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useChatSidebar } from '@/lib/chat-context';
 import styles from './index.module.css';
 import {
@@ -16,7 +16,7 @@ const CHATBOT_USER_BUBBLE = '#D9F8FF';
 const STORAGE_KEY = 'art-chatbot-messages';
 
 export default function ArtBot() {
-  const { isOpen, toggle, close, isHydrated } = useChatSidebar();
+  const { isOpen, toggle, isHydrated } = useChatSidebar();
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const {
     messages,
@@ -103,14 +103,6 @@ export default function ArtBot() {
     }
   }, [isLoading, toolsExecuted, messages]);
 
-  const handleClose = () => {
-    setMessages([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    close();
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
@@ -164,19 +156,6 @@ export default function ArtBot() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Minimize</TooltipContent>
-              </Tooltip>
-              {/* End chat */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleClose}
-                    className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
-                    aria-label="End chat"
-                  >
-                    <X size={20} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">End chat</TooltipContent>
               </Tooltip>
             </div>
           </div>
