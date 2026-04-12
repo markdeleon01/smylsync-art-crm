@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChat, type Message } from '@/lib/hooks/useChat';
-import { X, Minus } from 'lucide-react';
+import { X, ChevronDown, ChevronRight } from 'lucide-react';
+import { useChatSidebar } from '@/lib/chat-context';
+import styles from './index.module.css';
 import {
   Tooltip,
   TooltipContent,
@@ -12,12 +14,10 @@ import {
 const CHATBOT_ORANGE = '#FFA500';
 const CHATBOT_USER_BUBBLE = '#D9F8FF';
 const STORAGE_KEY = 'art-chatbot-messages';
-const OPEN_STATE_KEY = 'art-chatbot-open';
 
 export default function ArtBot() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, toggle, close, isHydrated } = useChatSidebar();
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
   const {
     messages,
     isLoading,
@@ -34,12 +34,10 @@ export default function ArtBot() {
 
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const toggleBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Handle hydration and load persisted state from localStorage
+  // Load persisted messages from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Load persisted messages
       const savedMessages = localStorage.getItem(STORAGE_KEY);
       if (savedMessages) {
         try {
@@ -50,19 +48,6 @@ export default function ArtBot() {
           console.error('Failed to load persisted messages:', e);
         }
       }
-
-      // Load persisted open state
-      const savedOpenState = localStorage.getItem(OPEN_STATE_KEY);
-      if (savedOpenState) {
-        try {
-          const isOpenState = JSON.parse(savedOpenState);
-          setIsOpen(isOpenState);
-        } catch (e) {
-          console.error('Failed to load persisted open state:', e);
-        }
-      }
-
-      setIsHydrated(true);
     }
   }, []);
 
@@ -72,13 +57,6 @@ export default function ArtBot() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
-
-  // Persist open state whenever it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(OPEN_STATE_KEY, JSON.stringify(isOpen));
-    }
-  }, [isOpen]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -97,7 +75,7 @@ export default function ArtBot() {
           '[data-chat-input]'
         ) as HTMLInputElement;
         input?.focus();
-      }, 0);
+      }, 300); // wait for slide-in transition
     }
   }, [isOpen]);
 
@@ -116,61 +94,57 @@ export default function ArtBot() {
   // Reload page after tool execution completes, and notify other components
   useEffect(() => {
     if (!isLoading && toolsExecuted && messages.length > 0) {
-      // Ensure messages are saved before reload
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-
-      // Notify same-page components (e.g. calendar) to refresh immediately
       window.dispatchEvent(new CustomEvent('art:tools-executed'));
-
       const reloadTimer = setTimeout(() => {
         window.location.reload();
       }, 2000);
-
       return () => clearTimeout(reloadTimer);
     }
   }, [isLoading, toolsExecuted, messages]);
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleMinimize = () => {
-    setIsOpen(false);
-  };
-
   const handleClose = () => {
-    // Clear messages when closing
     setMessages([]);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(OPEN_STATE_KEY);
     }
-    setIsOpen(false);
+    close();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!inputValue.trim() || isLoading) return;
-
     sendMessage(inputValue);
     setInputValue('');
   };
 
   return (
-    <div
-      className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3"
-      data-hydrated={isHydrated ? 'true' : undefined}
-    >
-      {/* Chat Window - only render after hydration */}
-      {isHydrated && isOpen && (
-        <div
-          className="w-96 h-96 bg-white rounded-lg shadow-xl border-4 flex flex-col overflow-hidden"
-          style={{ borderColor: CHATBOT_ORANGE }}
-        >
+    <>
+      {/* Sliding panel: bottom sheet on mobile, sidebar on desktop */}
+      <div
+        className={`${styles.panel}${isHydrated && isOpen ? ` ${styles.panelOpen}` : ''}`}
+        aria-hidden={!isOpen}
+      >
+        {/* Collapse chevron strip — desktop only */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={toggle}
+              className="hidden sm:flex items-center justify-center w-5 h-full bg-gray-100 hover:bg-gray-200 border-l border-t border-b border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-inset"
+              style={{ color: CHATBOT_ORANGE }}
+              aria-label="Collapse chat sidebar"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Collapse sidebar</TooltipContent>
+        </Tooltip>
+
+        {/* Panel */}
+        <div className="flex-1 sm:flex-none sm:w-96 h-full bg-white shadow-2xl flex flex-col border-t border-gray-200 sm:border-t-0 sm:border-l">
           {/* Header */}
           <div
-            className="flex items-center justify-between px-4 py-3 text-white"
+            className="flex items-center justify-between px-4 py-3 text-white shrink-0"
             style={{ backgroundColor: CHATBOT_ORANGE }}
           >
             <div className="flex items-center gap-2">
@@ -178,20 +152,20 @@ export default function ArtBot() {
               <h2 className="font-semibold">Ask ART</h2>
             </div>
             <div className="flex items-center gap-1">
+              {/* Minimize — mobile only */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={handleMinimize}
-                    className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                    onClick={toggle}
+                    className="sm:hidden p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
                     aria-label="Minimize chat"
                   >
-                    <Minus size={20} />
+                    <ChevronDown size={20} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  Minimize chat window
-                </TooltipContent>
+                <TooltipContent side="bottom">Minimize</TooltipContent>
               </Tooltip>
+              {/* End chat */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -202,7 +176,7 @@ export default function ArtBot() {
                     <X size={20} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">End chat window</TooltipContent>
+                <TooltipContent side="bottom">End chat</TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -210,7 +184,7 @@ export default function ArtBot() {
           {/* Messages Container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && !isLoading && (
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-gray-500 mt-4">
                 <p className="font-semibold mb-1">Welcome to ART</p>
                 <p>Start a conversation to get help</p>
               </div>
@@ -224,7 +198,7 @@ export default function ArtBot() {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs px-3 py-2 rounded-lg text-sm rounded-br-none`}
+                    className="max-w-[80%] px-3 py-2 rounded-lg text-sm"
                     style={
                       message.role === 'user'
                         ? {
@@ -243,26 +217,18 @@ export default function ArtBot() {
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg rounded-bl-none text-sm">
+                <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm">
                   <div className="flex gap-1">
-                    <div
-                      className="w-2 h-2 rounded-full animate-bounce"
-                      style={{ backgroundColor: CHATBOT_ORANGE }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 rounded-full animate-bounce"
-                      style={{
-                        backgroundColor: CHATBOT_ORANGE,
-                        animationDelay: '0.1s'
-                      }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 rounded-full animate-bounce"
-                      style={{
-                        backgroundColor: CHATBOT_ORANGE,
-                        animationDelay: '0.2s'
-                      }}
-                    ></div>
+                    {[0, 100, 200].map((delay) => (
+                      <div
+                        key={delay}
+                        className="w-2 h-2 rounded-full animate-bounce"
+                        style={{
+                          backgroundColor: CHATBOT_ORANGE,
+                          animationDelay: `${delay}ms`
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
@@ -282,7 +248,7 @@ export default function ArtBot() {
           {/* Input Area */}
           <form
             onSubmit={handleSubmit}
-            className="border-t border-gray-200 p-3"
+            className="border-t border-gray-200 p-3 shrink-0"
           >
             <div className="flex gap-2">
               <textarea
@@ -298,7 +264,6 @@ export default function ArtBot() {
                 placeholder={`Type a message... \n\n(Shift+Enter for new line)`}
                 disabled={isLoading}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none disabled:opacity-60 resize-none"
-                style={{ borderColor: 'inherit' }}
                 onFocus={(e) =>
                   (e.currentTarget.style.borderColor = CHATBOT_ORANGE)
                 }
@@ -316,21 +281,19 @@ export default function ArtBot() {
             </div>
           </form>
         </div>
-      )}
+      </div>
 
-      {/* Toggle Button */}
-      <button
-        ref={toggleBtnRef}
-        onClick={handleToggle}
-        className="px-4 py-3 text-white font-medium rounded-lg shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white"
-        style={{ backgroundColor: CHATBOT_ORANGE }}
-        aria-expanded={isOpen}
-        aria-label={
-          isOpen ? 'Close chat window' : 'Open chat window with Live Agent ART'
-        }
-      >
-        💬 Live Agent - ART
-      </button>
-    </div>
+      {/* Toggle button — only visible when sidebar is closed */}
+      {isHydrated && !isOpen && (
+        <button
+          onClick={toggle}
+          className="fixed bottom-4 right-4 z-50 px-4 py-3 text-white font-medium rounded-lg shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white"
+          style={{ backgroundColor: CHATBOT_ORANGE }}
+          aria-label="Open chat sidebar with Live Agent ART"
+        >
+          💬 Live Agent - ART
+        </button>
+      )}
+    </>
   );
 }
