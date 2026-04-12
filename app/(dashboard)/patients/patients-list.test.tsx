@@ -48,17 +48,19 @@ describe('PatientsList – rendering', () => {
     expect(screen.getByText(/No patients found/i)).toBeInTheDocument();
   });
 
-  it('renders a card for each patient', () => {
+  it('renders a row for each patient', () => {
     const patients = [
       makePatient({ id: 'p1', firstname: 'Alice', lastname: 'Smith' }),
       makePatient({ id: 'p2', firstname: 'Bob', lastname: 'Jones' })
     ];
     render(<PatientsList patients={patients} appointments={[]} />);
-    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
-    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.getByText('Smith')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('Jones')).toBeInTheDocument();
+    expect(screen.getByText('Bob')).toBeInTheDocument();
   });
 
-  it('displays patient id, name, and email on each card', () => {
+  it('displays patient id, name, and email in the row', () => {
     const p = makePatient({
       id: 'pat-xyz',
       firstname: 'Carlos',
@@ -67,15 +69,15 @@ describe('PatientsList – rendering', () => {
     });
     render(<PatientsList patients={[p]} appointments={[]} />);
     expect(screen.getByText('pat-xyz')).toBeInTheDocument();
-    // Name is rendered as "Last, First"
-    expect(screen.getByText('Ray, Carlos')).toBeInTheDocument();
+    expect(screen.getByText('Carlos')).toBeInTheDocument();
+    expect(screen.getByText('Ray')).toBeInTheDocument();
     expect(screen.getByText('carlos@clinic.com')).toBeInTheDocument();
   });
 
-  it('shows "No upcoming appointments" badge when patient has no appointments', () => {
+  it('shows "None" badge when patient has no appointments', () => {
     const p = makePatient();
     render(<PatientsList patients={[p]} appointments={[]} />);
-    expect(screen.getByText('No upcoming appointments')).toBeInTheDocument();
+    expect(screen.getByText('None')).toBeInTheDocument();
   });
 
   it('does NOT show "No upcoming appointments" when patient has appointments', () => {
@@ -325,9 +327,9 @@ describe('PatientsList – search', () => {
 
   it('shows all patients when search is empty', () => {
     render(<PatientsList patients={patients} appointments={[]} />);
-    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
-    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
-    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+    expect(screen.getByText('Smith')).toBeInTheDocument();
+    expect(screen.getByText('Jones')).toBeInTheDocument();
+    expect(screen.getByText('Brown')).toBeInTheDocument();
   });
 
   it('filters by first name', () => {
@@ -337,9 +339,9 @@ describe('PatientsList – search', () => {
       { target: { value: 'Alice' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
-    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
-    expect(screen.queryByText('Brown, Carol')).not.toBeInTheDocument();
+    expect(screen.getByText('Smith')).toBeInTheDocument();
+    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
+    expect(screen.queryByText('Brown')).not.toBeInTheDocument();
   });
 
   it('filters by last name', () => {
@@ -349,8 +351,8 @@ describe('PatientsList – search', () => {
       { target: { value: 'Jones' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
-    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.getByText('Jones')).toBeInTheDocument();
+    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
   });
 
   it('filters by email address', () => {
@@ -360,8 +362,8 @@ describe('PatientsList – search', () => {
       { target: { value: 'carol@example.com' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
-    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.getByText('Brown')).toBeInTheDocument();
+    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
   });
 
   it('filters by patient ID', () => {
@@ -371,9 +373,9 @@ describe('PatientsList – search', () => {
       { target: { value: 'p2' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
-    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
-    expect(screen.queryByText('Brown, Carol')).not.toBeInTheDocument();
+    expect(screen.getByText('Jones')).toBeInTheDocument();
+    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
+    expect(screen.queryByText('Brown')).not.toBeInTheDocument();
   });
 
   it('is case-insensitive', () => {
@@ -383,7 +385,7 @@ describe('PatientsList – search', () => {
       { target: { value: 'ALICE' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.getByText('Smith')).toBeInTheDocument();
   });
 
   it('shows no-results message when nothing matches', () => {
@@ -401,11 +403,11 @@ describe('PatientsList – search', () => {
     const input = screen.getByRole('textbox', { name: /Search patients/i });
     fireEvent.change(input, { target: { value: 'Alice' } });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
     // Clear the input — all patients should reappear immediately
     fireEvent.change(input, { target: { value: '' } });
-    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
-    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+    expect(screen.getByText('Jones')).toBeInTheDocument();
+    expect(screen.getByText('Brown')).toBeInTheDocument();
   });
 
   it('filters by partial email domain', () => {
@@ -415,8 +417,8 @@ describe('PatientsList – search', () => {
       { target: { value: '@clinic' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
-    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.getByText('Jones')).toBeInTheDocument();
+    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
   });
 
   it('filters by phone number', () => {
@@ -426,9 +428,9 @@ describe('PatientsList – search', () => {
       { target: { value: '(415) 555-0303' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
-    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
-    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+    expect(screen.getByText('Brown')).toBeInTheDocument();
+    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
   });
 
   it('filters by partial phone number', () => {
@@ -438,8 +440,8 @@ describe('PatientsList – search', () => {
       { target: { value: '(213)' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
-    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+    expect(screen.getByText('Smith')).toBeInTheDocument();
+    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
   });
 });
 
@@ -468,6 +470,7 @@ describe('PatientsList – heading', () => {
 describe('PatientsList – sorting', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   const patients = [
@@ -491,10 +494,13 @@ describe('PatientsList – sorting', () => {
     })
   ];
 
-  it('renders the sort dropdown', () => {
+  it('renders column sort buttons', () => {
     render(<PatientsList patients={patients} appointments={[]} />);
     expect(
-      screen.getByRole('combobox', { name: /Sort patients/i })
+      screen.getByRole('button', { name: /Sort by Last Name/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Sort by First Name/i })
     ).toBeInTheDocument();
   });
 
@@ -502,37 +508,44 @@ describe('PatientsList – sorting', () => {
     const { container } = render(
       <PatientsList patients={patients} appointments={[]} />
     );
-    const cards = container.querySelectorAll('[class*="rounded-lg border"]');
-    const names = Array.from(cards).map((c) => c.textContent);
-    const adamsIdx = names.findIndex((t) => t?.includes('Adams'));
-    const morrisIdx = names.findIndex((t) => t?.includes('Morris'));
-    const zimmermanIdx = names.findIndex((t) => t?.includes('Zimmerman'));
+    const rows = container.querySelectorAll('tbody tr');
+    const names = Array.from(rows).map((r) => r.textContent ?? '');
+    const adamsIdx = names.findIndex((t) => t.includes('Adams'));
+    const morrisIdx = names.findIndex((t) => t.includes('Morris'));
+    const zimmermanIdx = names.findIndex((t) => t.includes('Zimmerman'));
     expect(adamsIdx).toBeLessThan(morrisIdx);
     expect(morrisIdx).toBeLessThan(zimmermanIdx);
   });
 
-  it('sorts last name descending (Z to A) when selected', () => {
+  it('sorts last name descending (Z to A) when the column is clicked', () => {
     const { container } = render(
       <PatientsList patients={patients} appointments={[]} />
     );
-    fireEvent.change(screen.getByRole('combobox', { name: /Sort patients/i }), {
-      target: { value: 'desc' }
-    });
-    const cards = container.querySelectorAll('[class*="rounded-lg border"]');
-    const names = Array.from(cards).map((c) => c.textContent);
-    const adamsIdx = names.findIndex((t) => t?.includes('Adams'));
-    const morrisIdx = names.findIndex((t) => t?.includes('Morris'));
-    const zimmermanIdx = names.findIndex((t) => t?.includes('Zimmerman'));
+    // Default is lastname asc; click to toggle to desc
+    fireEvent.click(screen.getByRole('button', { name: /Sort by Last Name/i }));
+    const rows = container.querySelectorAll('tbody tr');
+    const names = Array.from(rows).map((r) => r.textContent ?? '');
+    const adamsIdx = names.findIndex((t) => t.includes('Adams'));
+    const morrisIdx = names.findIndex((t) => t.includes('Morris'));
+    const zimmermanIdx = names.findIndex((t) => t.includes('Zimmerman'));
     expect(zimmermanIdx).toBeLessThan(morrisIdx);
     expect(morrisIdx).toBeLessThan(adamsIdx);
   });
 
-  it('re-sorts back to ascending when switched back', () => {
-    render(<PatientsList patients={patients} appointments={[]} />);
-    const select = screen.getByRole('combobox', { name: /Sort patients/i });
-    fireEvent.change(select, { target: { value: 'desc' } });
-    fireEvent.change(select, { target: { value: 'asc' } });
-    expect((select as HTMLSelectElement).value).toBe('asc');
+  it('re-sorts back to ascending when the column is clicked twice', () => {
+    const { container } = render(
+      <PatientsList patients={patients} appointments={[]} />
+    );
+    const lastNameBtn = screen.getByRole('button', {
+      name: /Sort by Last Name/i
+    });
+    fireEvent.click(lastNameBtn); // → desc
+    fireEvent.click(lastNameBtn); // → back to asc
+    const rows = container.querySelectorAll('tbody tr');
+    const names = Array.from(rows).map((r) => r.textContent ?? '');
+    const adamsIdx = names.findIndex((t) => t.includes('Adams'));
+    const zimmermanIdx = names.findIndex((t) => t.includes('Zimmerman'));
+    expect(adamsIdx).toBeLessThan(zimmermanIdx);
   });
 });
 
@@ -547,10 +560,10 @@ describe('PatientsList – phone display', () => {
     expect(screen.getByText('(213) 555-0101')).toBeInTheDocument();
   });
 
-  it('does not render the Phone label when phone is null', () => {
+  it('shows em-dash in the phone column when phone is null', () => {
     const p = makePatient({ phone: null });
     render(<PatientsList patients={[p]} appointments={[]} />);
-    expect(screen.queryByText('Phone')).not.toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 });
 
@@ -577,28 +590,37 @@ describe('PatientsList – sort persistence (sessionStorage)', () => {
     })
   ];
 
-  it('defaults to "asc" when sessionStorage has no saved value', () => {
-    render(<PatientsList patients={patients} appointments={[]} />);
-    const select = screen.getByRole('combobox', {
-      name: /Sort patients/i
-    }) as HTMLSelectElement;
-    expect(select.value).toBe('asc');
+  it('defaults to last-name ascending when sessionStorage has no saved value', () => {
+    const { container } = render(
+      <PatientsList patients={patients} appointments={[]} />
+    );
+    const rows = container.querySelectorAll('tbody tr');
+    const names = Array.from(rows).map((r) => r.textContent ?? '');
+    const adamsIdx = names.findIndex((t) => t.includes('Adams'));
+    const zimmermanIdx = names.findIndex((t) => t.includes('Zimmerman'));
+    expect(adamsIdx).toBeLessThan(zimmermanIdx);
   });
 
-  it('initialises sort order from sessionStorage when a value is saved', () => {
-    sessionStorage.setItem('patients-sort-order', 'desc');
-    render(<PatientsList patients={patients} appointments={[]} />);
-    const select = screen.getByRole('combobox', {
-      name: /Sort patients/i
-    }) as HTMLSelectElement;
-    expect(select.value).toBe('desc');
+  it('initialises sort column and direction from sessionStorage when values are saved', () => {
+    sessionStorage.setItem('patients-sort-col', 'firstname');
+    sessionStorage.setItem('patients-sort-dir', 'asc');
+    const { container } = render(
+      <PatientsList patients={patients} appointments={[]} />
+    );
+    const rows = container.querySelectorAll('tbody tr');
+    const names = Array.from(rows).map((r) => r.textContent ?? '');
+    const aliceIdx = names.findIndex((t) => t.includes('Alice'));
+    const charlieIdx = names.findIndex((t) => t.includes('Charlie'));
+    expect(aliceIdx).toBeLessThan(charlieIdx);
   });
 
-  it('writes the chosen sort order to sessionStorage when changed', () => {
+  it('writes the sort column and direction to sessionStorage when a column header is clicked', () => {
     render(<PatientsList patients={patients} appointments={[]} />);
-    const select = screen.getByRole('combobox', { name: /Sort patients/i });
-    fireEvent.change(select, { target: { value: 'desc' } });
-    expect(sessionStorage.getItem('patients-sort-order')).toBe('desc');
+    fireEvent.click(
+      screen.getByRole('button', { name: /Sort by First Name/i })
+    );
+    expect(sessionStorage.getItem('patients-sort-col')).toBe('firstname');
+    expect(sessionStorage.getItem('patients-sort-dir')).toBe('asc');
   });
 });
 

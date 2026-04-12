@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { APPOINTMENT_DURATIONS } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -94,25 +93,60 @@ export function PatientsList({ patients, appointments }: Props) {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [query, setQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  type SortCol = 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
+  const [sortCol, setSortCol] = useState<SortCol>('lastname');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  // Guard: prevent the save effect from overwriting localStorage with initial
+  // defaults before the load effect has had a chance to hydrate state from
+  // localStorage. Effects run top-to-bottom, so placing save BEFORE load
+  // means on the initial render save sees hasLoaded=false and skips. The load
+  // effect then reads the persisted values, updates state, and sets
+  // hasLoaded=true. The resulting re-render runs the save effect with the
+  // correct loaded values. A fresh ref is created on every mount, which also
+  // makes this safe under React StrictMode's double-invoke behaviour.
+  const hasLoaded = useRef(false);
 
+  // Save — listed FIRST so it runs before the load effect on initial render
   useEffect(() => {
-    const savedSort = sessionStorage.getItem('patients-sort-order');
-    if (savedSort === 'asc' || savedSort === 'desc') setSortOrder(savedSort);
+    if (!hasLoaded.current) return;
+    sessionStorage.setItem('patients-sort-col', sortCol);
+    sessionStorage.setItem('patients-sort-dir', sortDir);
+  }, [sortCol, sortDir]);
+
+  // Load — listed SECOND; sets hasLoaded=true at the end.
+  // The cleanup resets hasLoaded to false so that when React StrictMode
+  // simulates unmount→remount, the save effect (which runs before this load
+  // effect on the remount) sees hasLoaded=false and skips writing the reset
+  // initial state values to localStorage before we have a chance to hydrate
+  // from localStorage again.
+  useEffect(() => {
+    const savedCol = sessionStorage.getItem('patients-sort-col');
+    const savedDir = sessionStorage.getItem('patients-sort-dir');
+    if (savedCol) setSortCol(savedCol as SortCol);
+    if (savedDir === 'asc' || savedDir === 'desc') setSortDir(savedDir);
     const savedSearch = sessionStorage.getItem('patients-search');
     if (savedSearch) {
       setInputValue(savedSearch);
       setQuery(savedSearch);
     }
+    hasLoaded.current = true;
+    return () => {
+      hasLoaded.current = false;
+    };
   }, []);
-
-  useEffect(() => {
-    sessionStorage.setItem('patients-sort-order', sortOrder);
-  }, [sortOrder]);
 
   useEffect(() => {
     sessionStorage.setItem('patients-search', query);
   }, [query]);
+
+  function handleColSort(col: SortCol) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortCol(col);
+      setSortDir('asc');
+    }
+  }
 
   // Filter patients by ID, first name, last name, email, or phone
   const q = query.trim().toLowerCase();
@@ -127,10 +161,26 @@ export function PatientsList({ patients, appointments }: Props) {
       )
     : patients;
 
-  // Sort by last name
   const visiblePatients = [...filteredPatients].sort((a, b) => {
-    const cmp = a.lastname.localeCompare(b.lastname);
-    return sortOrder === 'asc' ? cmp : -cmp;
+    let cmp = 0;
+    switch (sortCol) {
+      case 'id':
+        cmp = a.id.localeCompare(b.id);
+        break;
+      case 'firstname':
+        cmp = a.firstname.localeCompare(b.firstname);
+        break;
+      case 'lastname':
+        cmp = a.lastname.localeCompare(b.lastname);
+        break;
+      case 'email':
+        cmp = a.email.localeCompare(b.email);
+        break;
+      case 'phone':
+        cmp = (a.phone ?? '').localeCompare(b.phone ?? '');
+        break;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
   });
 
   // Group appointments by patient_id
@@ -222,53 +272,86 @@ export function PatientsList({ patients, appointments }: Props) {
               Search
             </button>
           </form>
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
-            <label
-              htmlFor="sort-order"
-              className="text-sm text-gray-600 shrink-0"
-            >
-              Sort by:
-            </label>
-            <select
-              id="sort-order"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-auto"
-              aria-label="Sort patients"
-            >
-              <option value="asc">Last name – A to Z</option>
-              <option value="desc">Last name – Z to A</option>
-            </select>
-          </div>
         </div>
       </div>
 
       {visiblePatients.length > 0 ? (
-        <div className="space-y-4">
-          {visiblePatients.map((patient) => {
-            const appts = byPatient.get(patient.id) ?? [];
-            return (
-              <Card
-                key={patient.id}
-                className="shadow-md hover:shadow-lg transition-shadow"
-              >
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                          ID
-                        </p>
-                        <p className="text-lg font-medium text-gray-900">
-                          {patient.id}
-                        </p>
-                      </div>
-
-                      {/* Upcoming appointment badges */}
-                      <div className="flex flex-wrap gap-1.5 justify-end shrink-0 pt-1 max-w-[70%]">
+        <div className="rounded-md border overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b">
+                {(
+                  [
+                    { col: 'id', label: 'ID' },
+                    { col: 'firstname', label: 'First Name' },
+                    { col: 'lastname', label: 'Last Name' },
+                    { col: 'email', label: 'Email' },
+                    { col: 'phone', label: 'Phone' }
+                  ] as {
+                    col: 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
+                    label: string;
+                  }[]
+                ).map(({ col, label }) => (
+                  <th
+                    key={col}
+                    className="px-4 py-3 text-left whitespace-nowrap"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleColSort(col)}
+                      className="inline-flex items-center gap-1 font-semibold text-gray-600 uppercase tracking-wide text-xs hover:text-gray-900 transition-colors select-none"
+                      aria-label={`Sort by ${label}`}
+                    >
+                      {label}
+                      <span className="text-[10px] leading-none w-3 text-center">
+                        {sortCol === col ? (
+                          sortDir === 'asc' ? (
+                            '▲'
+                          ) : (
+                            '▼'
+                          )
+                        ) : (
+                          <span className="opacity-30">⇅</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wide text-xs whitespace-nowrap">
+                  Upcoming Appointments
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {visiblePatients.map((patient) => {
+                const appts = byPatient.get(patient.id) ?? [];
+                return (
+                  <tr
+                    key={patient.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500 whitespace-nowrap align-top">
+                      {patient.id}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap align-top">
+                      {patient.firstname}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap align-top">
+                      {patient.lastname}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 break-all align-top">
+                      {patient.email}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap align-top">
+                      {patient.phone ?? (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <div className="flex flex-wrap gap-1.5">
                         {appts.length === 0 ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded border border-gray-300 bg-gray-100 text-gray-500 text-xs font-medium whitespace-nowrap">
-                            No upcoming appointments
+                            None
                           </span>
                         ) : (
                           appts.map((appt) => {
@@ -291,41 +374,12 @@ export function PatientsList({ patients, appointments }: Props) {
                           })
                         )}
                       </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        Name
-                      </p>
-                      <p className="text-lg font-medium text-gray-900">
-                        {patient.lastname}, {patient.firstname}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        Email
-                      </p>
-                      <p className="text-lg font-medium text-gray-900 break-all">
-                        {patient.email}
-                      </p>
-                    </div>
-
-                    {patient.phone && (
-                      <div>
-                        <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                          Phone
-                        </p>
-                        <p className="text-lg font-medium text-gray-900">
-                          {patient.phone}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="text-center py-12">

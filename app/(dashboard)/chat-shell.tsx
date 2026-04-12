@@ -10,7 +10,7 @@ export default function ChatShell({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(OPEN_STATE_KEY);
+    const saved = sessionStorage.getItem(OPEN_STATE_KEY);
     if (saved) {
       try {
         setIsOpen(JSON.parse(saved));
@@ -23,7 +23,7 @@ export default function ChatShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isHydrated) {
-      localStorage.setItem(OPEN_STATE_KEY, JSON.stringify(isOpen));
+      sessionStorage.setItem(OPEN_STATE_KEY, JSON.stringify(isOpen));
     }
   }, [isOpen, isHydrated]);
 

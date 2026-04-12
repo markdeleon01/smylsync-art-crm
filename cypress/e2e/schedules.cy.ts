@@ -77,8 +77,8 @@ describe('Schedules Page', () => {
         // Day view shows a single column (day name visible in header)
         const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
         cy.contains(dayName).should('be.visible');
-        // Seven-column Monday header should no longer be a day-column header
-        cy.contains('Monday').should('not.exist');
+        // Seven-column week view grid should be gone
+        cy.get('[data-testid="week-view"]').should('not.exist');
     });
 
     it('shows "No appointments scheduled for this day" when day view is empty', () => {
