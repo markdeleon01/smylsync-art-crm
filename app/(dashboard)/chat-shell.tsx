@@ -33,8 +33,7 @@ export default function ChatShell({ children }: { children: React.ReactNode }) {
   return (
     <ChatSidebarContext.Provider value={{ isOpen, toggle, close, isHydrated }}>
       <div
-        className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 transition-[margin-right] duration-300 ease-in-out"
-        style={{ marginRight: isHydrated && isOpen ? '24rem' : '0' }}
+        className={`flex flex-col sm:gap-4 sm:py-4 sm:pl-14 transition-[margin-right] duration-300 ease-in-out${isHydrated && isOpen ? ' sm:mr-96' : ''}`}
       >
         {children}
       </div>

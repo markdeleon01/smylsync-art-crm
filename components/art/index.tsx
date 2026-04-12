@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChat, type Message } from '@/lib/hooks/useChat';
-import { X, ChevronRight } from 'lucide-react';
+import { X, ChevronDown, ChevronRight } from 'lucide-react';
 import { useChatSidebar } from '@/lib/chat-context';
+import styles from './index.module.css';
 import {
   Tooltip,
   TooltipContent,
@@ -119,20 +120,17 @@ export default function ArtBot() {
 
   return (
     <>
-      {/* Sliding sidebar panel */}
+      {/* Sliding panel: bottom sheet on mobile, sidebar on desktop */}
       <div
-        className="fixed top-0 right-0 h-screen z-40 flex transition-transform duration-300 ease-in-out"
-        style={{
-          transform: isHydrated && isOpen ? 'translateX(0)' : 'translateX(100%)'
-        }}
+        className={`${styles.panel}${isHydrated && isOpen ? ` ${styles.panelOpen}` : ''}`}
         aria-hidden={!isOpen}
       >
-        {/* Collapse chevron strip */}
+        {/* Collapse chevron strip — desktop only */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={toggle}
-              className="flex items-center justify-center w-5 h-full bg-gray-100 hover:bg-gray-200 border-l border-t border-b border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-inset"
+              className="hidden sm:flex items-center justify-center w-5 h-full bg-gray-100 hover:bg-gray-200 border-l border-t border-b border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-inset"
               style={{ color: CHATBOT_ORANGE }}
               aria-label="Collapse chat sidebar"
             >
@@ -143,7 +141,7 @@ export default function ArtBot() {
         </Tooltip>
 
         {/* Panel */}
-        <div className="w-96 h-screen bg-white shadow-2xl flex flex-col border-l border-gray-200">
+        <div className="flex-1 sm:flex-none sm:w-96 h-full bg-white shadow-2xl flex flex-col border-t border-gray-200 sm:border-t-0 sm:border-l">
           {/* Header */}
           <div
             className="flex items-center justify-between px-4 py-3 text-white shrink-0"
@@ -153,18 +151,34 @@ export default function ArtBot() {
               <img src="/favicon.ico" alt="ART" className="h-5 w-5 shrink-0" />
               <h2 className="font-semibold">Ask ART</h2>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleClose}
-                  className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
-                  aria-label="End chat"
-                >
-                  <X size={20} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">End chat</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-1">
+              {/* Minimize — mobile only */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggle}
+                    className="sm:hidden p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                    aria-label="Minimize chat"
+                  >
+                    <ChevronDown size={20} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Minimize</TooltipContent>
+              </Tooltip>
+              {/* End chat */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleClose}
+                    className="p-1 hover:bg-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white"
+                    aria-label="End chat"
+                  >
+                    <X size={20} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">End chat</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           {/* Messages Container */}
