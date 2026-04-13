@@ -280,7 +280,6 @@ describe('Patients Page – search', () => {
 describe('Patients Page – sort column headers', () => {
     beforeEach(() => {
         cy.login();
-        cy.window().then((win) => win.localStorage.clear());
         cy.visit('/patients');
     });
 
