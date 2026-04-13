@@ -67,7 +67,7 @@ async function main() {
             VALUES (${patient.id}, ${patient.firstname}, ${patient.lastname}, ${patient.email}, ${patient.phone})
             ON CONFLICT (email) DO NOTHING
         `;
-        if (result.count === 0) {
+        if (result.length === 0) {
             console.log(`  Skipped (already exists): ${patient.id} – ${patient.firstname} ${patient.lastname}`);
             skipped++;
         } else {
