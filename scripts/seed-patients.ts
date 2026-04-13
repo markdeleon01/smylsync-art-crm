@@ -67,6 +67,7 @@ async function main() {
             INSERT INTO patients (id, firstname, lastname, email, phone)
             VALUES (${patient.id}, ${patient.firstname}, ${patient.lastname}, ${patient.email}, ${patient.phone})
             ON CONFLICT (email) DO NOTHING
+            RETURNING id
         `;
         if (result.length === 0) {
             console.log(`  Skipped (already exists): ${patient.id} – ${patient.firstname} ${patient.lastname}`);
