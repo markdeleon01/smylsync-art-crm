@@ -6,6 +6,7 @@ export interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
+    timestamp?: string;
 }
 
 interface UseChatOptions {
@@ -37,6 +38,7 @@ export function useChat(options?: UseChatOptions) {
                 id: Date.now().toString(),
                 role: 'user',
                 content: userMessage,
+                timestamp: new Date().toISOString(),
             };
 
             setMessages((prev) => [...prev, userMsg]);
@@ -115,6 +117,15 @@ export function useChat(options?: UseChatOptions) {
                         );
                     }
                 }
+
+                // Stamp the assistant message with the time streaming completed
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        msg.id === assistantId
+                            ? { ...msg, timestamp: new Date().toISOString() }
+                            : msg
+                    )
+                );
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Unknown error');
                 setError(error);

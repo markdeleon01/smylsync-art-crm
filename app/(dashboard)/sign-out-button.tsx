@@ -32,12 +32,36 @@ export function SignOutButton() {
     `;
     document.body.appendChild(overlay);
 
+    const rawMessages = sessionStorage.getItem('art-chatbot-messages');
+    const token = sessionStorage.getItem('token');
+
+    let parsedMessages: unknown[] | null = null;
+    try {
+      if (rawMessages) parsedMessages = JSON.parse(rawMessages);
+    } catch {
+      // corrupted storage — skip save
+    }
+
+    const saveHistoryPromise =
+      parsedMessages && parsedMessages.length > 0 && token
+        ? fetch('/api/chat-history', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ messages: parsedMessages })
+          }).catch(() => {})
+        : Promise.resolve();
+
     try {
       await Promise.all([
         fetch('/api/auth/logout', { method: 'POST' }),
-        new Promise((resolve) => setTimeout(resolve, 1000))
+        new Promise((resolve) => setTimeout(resolve, 1000)),
+        saveHistoryPromise
       ]);
     } finally {
+      sessionStorage.clear();
       window.location.href = '/login';
     }
   };
