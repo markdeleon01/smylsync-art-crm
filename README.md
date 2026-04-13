@@ -32,7 +32,7 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 
 - AI SDK - [Vercel AI SDK v6](https://sdk.vercel.ai) (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`, `@ai-sdk/mcp`)
 - LLM - OpenAI GPT-5-nano (via `@ai-sdk/openai`)
-- MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — stateless HTTP transport, 25+ registered tools
+- MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — stateless HTTP transport, 28 registered tools
 - Analytics - [Vercel Analytics](https://vercel.com/analytics)
 
 **Email:**
@@ -49,7 +49,7 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 
 ## Features
 
-- 🤖 **ART Agent** - AI operations agent that can read and write patient/appointment data through MCP tools, ask for confirmation before destructive actions, and chain up to multiple tool calls per turn
+- 🤖 **ART Agent** - AI operations agent that can read and write patient/appointment data through MCP tools, ask for confirmation before destructive actions, and chain up to 5 tool calls per turn
 - 🗓️ **Schedules Calendar** - Week/day/month calendar view of all appointments with colour-coded appointment types
 - 👥 **Patient Management** - Browse, search, sort, and view patients with their upcoming appointments; full CRUD via ART
 - 📧 **Email Notifications** - Booking confirmations, rescheduling notices, cancellation notices, and automated 24-hour reminders
@@ -112,11 +112,12 @@ URL=                  # Public base URL in production (set automatically by Netl
 
 3. **Database Setup:**
 
-Run migrations then seed initial users:
+Run migrations then seed initial data:
 
 ```bash
 pnpm run migrate
 pnpm run seed:users
+pnpm run seed:patients
 ```
 
 4. **Start Development Server:**
@@ -135,6 +136,7 @@ pnpm run build            # Build for production
 pnpm run start            # Start production server
 pnpm run migrate          # Run database migrations (requires .env)
 pnpm run seed:users       # Seed initial user accounts (requires .env)
+pnpm run seed:patients    # Seed patient records (requires .env)
 pnpm run test             # Run unit tests in watch mode
 pnpm run test:ui          # Run tests with Vitest UI dashboard
 pnpm run test:coverage    # Generate test coverage report
@@ -321,7 +323,7 @@ See [CIRCLECI.md](./CIRCLECI.md) for modifying pipeline stages, adding jobs, and
 ```
 app/
   ├── api/
-  │   ├── [transport]/        # MCP server (stateless HTTP, 25+ tools)
+  │   ├── [transport]/        # MCP server (stateless HTTP, 28 tools)
   │   ├── art/                # ART chat endpoint (streamText + MCP client)
   │   ├── appointments/       # Appointments REST API
   │   ├── patients/           # Patients REST API

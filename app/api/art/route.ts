@@ -102,8 +102,8 @@ export async function POST(req: Request) {
         ];
 
         // Call the gpt-5-nano (faster and cheaper) model to decide which tool(s) to call and with what arguments.
-        // stopWhen: stepCountIs(3) allows the model to make up to two sequential tool calls
-        // (e.g. look up a patient, then book an appointment) before producing a final text response.
+        // stopWhen: stepCountIs(6) allows up to 5 sequential tool call steps plus 1 final text step.
+        // e.g. look up patient → check slots → book → send email → verify = 5 tool calls.
         // Confirmation always happens in the preceding user turn — it is never a step inside this loop.
         // anyToolCalled tracks whether any step in the multi-step generation called a tool.
         // response.toolResults only reflects the LAST step, which is always a text step with
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
         const response = streamText({
             model: openai('gpt-5-nano'),
             tools,
-            stopWhen: stepCountIs(5), // allow up to 4 tool calls before final text response
+            stopWhen: stepCountIs(6), // allow up to 5 tool calls before final text response
             system: systemPrompt,
             messages: conversationMessages,
             onStepFinish: ({ toolCalls, toolResults: stepResults }) => {
