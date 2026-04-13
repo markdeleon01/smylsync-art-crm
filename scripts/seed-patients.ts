@@ -62,6 +62,7 @@ async function main() {
     let skipped = 0;
 
     for (const patient of patients) {
+        console.log(`Processing: ${patient.id} – ${patient.firstname} ${patient.lastname}`);
         const result = await sql`
             INSERT INTO patients (id, firstname, lastname, email, phone)
             VALUES (${patient.id}, ${patient.firstname}, ${patient.lastname}, ${patient.email}, ${patient.phone})
