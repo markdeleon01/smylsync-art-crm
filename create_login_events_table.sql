@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS login_events;
+
 CREATE TABLE IF NOT EXISTS login_events (
   id VARCHAR(255) PRIMARY KEY,
   email VARCHAR(255) NOT NULL,

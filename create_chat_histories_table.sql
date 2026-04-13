@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS chat_histories;
+
 CREATE TABLE IF NOT EXISTS chat_histories (
   id VARCHAR(255) PRIMARY KEY,
   user_id VARCHAR(255) NOT NULL,
