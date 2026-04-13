@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS login_events (
+  id VARCHAR(255) PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  logged_in_at TIMESTAMPTZ DEFAULT NOW()
+);

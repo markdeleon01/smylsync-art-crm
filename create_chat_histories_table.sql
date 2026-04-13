@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS chat_histories (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL,
+  messages JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

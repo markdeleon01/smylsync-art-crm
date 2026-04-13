@@ -2,6 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
+import { recordLoginEvent } from '@/lib/services/chat-history';
 
 const PEPPER = process.env.BCRYPT_PEPPER ?? '';
 const JWT_SECRET = new TextEncoder().encode(
@@ -76,6 +77,8 @@ export async function POST(req: NextRequest) {
             .setIssuedAt()
             .setExpirationTime(SESSION_EXPIRY)
             .sign(JWT_SECRET);
+
+        await recordLoginEvent(user.email);
 
         return Response.json(
             { token },

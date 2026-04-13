@@ -15,6 +15,30 @@ const CHATBOT_ORANGE = '#FFA500';
 const CHATBOT_USER_BUBBLE = '#D9F8FF';
 const STORAGE_KEY = 'art-chatbot-messages';
 
+const CAPABILITIES_PATTERN =
+  /what (can|do) (you|u) (do|help|assist|offer)|what('s| is) (your|ur) (capability|capabilities|function|purpose)|how can (you|u) help|what are (your|ur) (feature|features|capabilities)|help me|tell me (what|about) (you can|your)/i;
+
+const QUICK_ACTIONS = [
+  { label: 'Look up a patient', prompt: 'Show me all patients' },
+  {
+    label: 'Book an appointment',
+    prompt: 'I need to book an appointment for a patient'
+  },
+  {
+    label: "View today's appointments",
+    prompt: 'What appointments are scheduled for today?'
+  },
+  {
+    label: 'Check available time slots',
+    prompt: 'What time slots are available today?'
+  },
+  { label: 'Add a new patient', prompt: 'I need to add a new patient' },
+  {
+    label: 'Send a reminder email',
+    prompt: 'I need to send a reminder email to a patient'
+  }
+];
+
 export default function ArtBot() {
   const { isOpen, toggle, isHydrated } = useChatSidebar();
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
@@ -33,6 +57,7 @@ export default function ArtBot() {
   });
 
   const [inputValue, setInputValue] = useState('');
+  const [quickActionsVisible, setQuickActionsVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load persisted messages from sessionStorage
@@ -106,8 +131,14 @@ export default function ArtBot() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
+    setQuickActionsVisible(CAPABILITIES_PATTERN.test(inputValue));
     sendMessage(inputValue);
     setInputValue('');
+  };
+
+  const handleQuickAction = (prompt: string) => {
+    setQuickActionsVisible(false);
+    sendMessage(prompt);
   };
 
   return (
@@ -178,9 +209,9 @@ export default function ArtBot() {
                     Hi, I&apos;m ART
                   </p>
                   <p className="text-sm text-gray-600">
-                    I am SMYLSYNC&apos;s AI internal operations assistant. I can help
-                    you manage patients, appointments, schedules, and send email
-                    notifications.
+                    I am SMYLSYNC&apos;s AI internal operations assistant. I can
+                    help you manage patients, appointments, schedules, and send
+                    email notifications.
                   </p>
                 </div>
 
@@ -189,35 +220,10 @@ export default function ArtBot() {
                     Quick actions
                   </p>
                   <div className="flex flex-col gap-2">
-                    {[
-                      {
-                        label: 'Look up a patient',
-                        prompt: 'Show me all patients'
-                      },
-                      {
-                        label: 'Book an appointment',
-                        prompt: 'I need to book an appointment for a patient'
-                      },
-                      {
-                        label: "View today's appointments",
-                        prompt: 'What appointments are scheduled for today?'
-                      },
-                      {
-                        label: 'Check available time slots',
-                        prompt: 'What time slots are available today?'
-                      },
-                      {
-                        label: 'Add a new patient',
-                        prompt: 'I need to add a new patient'
-                      },
-                      {
-                        label: 'Send a reminder email',
-                        prompt: 'I need to send a reminder email to a patient'
-                      }
-                    ].map(({ label, prompt }) => (
+                    {QUICK_ACTIONS.map(({ label, prompt }) => (
                       <button
                         key={label}
-                        onClick={() => sendMessage(prompt)}
+                        onClick={() => handleQuickAction(prompt)}
                         disabled={isLoading}
                         className="text-left w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:border-orange-300 hover:bg-orange-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-300 disabled:opacity-50"
                       >
@@ -229,30 +235,53 @@ export default function ArtBot() {
               </div>
             )}
 
-            {messages
-              .filter((message) => message.content.trim())
-              .map((message: Message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className="max-w-[80%] px-3 py-2 rounded-lg text-sm"
-                    style={
-                      message.role === 'user'
-                        ? {
-                            backgroundColor: CHATBOT_USER_BUBBLE,
-                            color: '#333'
-                          }
-                        : { backgroundColor: '#f3f4f6', color: '#111827' }
-                    }
-                  >
-                    <p className="whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
+            {(() => {
+              const lastAssistantMsgId = [...messages]
+                .reverse()
+                .find((m) => m.role === 'assistant' && m.content.trim())?.id;
+              return messages
+                .filter((message) => message.content.trim())
+                .map((message: Message) => (
+                  <div key={message.id}>
+                    <div
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className="max-w-[80%] px-3 py-2 rounded-lg text-sm"
+                        style={
+                          message.role === 'user'
+                            ? {
+                                backgroundColor: CHATBOT_USER_BUBBLE,
+                                color: '#333'
+                              }
+                            : { backgroundColor: '#f3f4f6', color: '#111827' }
+                        }
+                      >
+                        <p className="whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                      </div>
+                    </div>
+                    {message.role === 'assistant' &&
+                      message.id === lastAssistantMsgId &&
+                      quickActionsVisible &&
+                      !isLoading && (
+                        <div className="flex flex-col gap-2 mt-2">
+                          {QUICK_ACTIONS.map(({ label, prompt }) => (
+                            <button
+                              key={label}
+                              onClick={() => handleQuickAction(prompt)}
+                              disabled={isLoading}
+                              className="text-left w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:border-orange-300 hover:bg-orange-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-300 disabled:opacity-50"
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                   </div>
-                </div>
-              ))}
+                ));
+            })()}
 
             {isLoading && (
               <div className="flex justify-start">
