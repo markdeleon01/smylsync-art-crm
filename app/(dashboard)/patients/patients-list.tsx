@@ -275,55 +275,63 @@ export function PatientsList({ patients, appointments }: Props) {
         </div>
       </div>
 
-      {visiblePatients.length > 0 ? (
-        <div className="rounded-md border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                {(
-                  [
-                    { col: 'id', label: 'ID' },
-                    { col: 'firstname', label: 'First Name' },
-                    { col: 'lastname', label: 'Last Name' },
-                    { col: 'email', label: 'Email' },
-                    { col: 'phone', label: 'Phone' }
-                  ] as {
-                    col: 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
-                    label: string;
-                  }[]
-                ).map(({ col, label }) => (
-                  <th
-                    key={col}
-                    className="px-4 py-3 text-left whitespace-nowrap"
+      <div className="rounded-md border overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 border-b">
+              {(
+                [
+                  { col: 'id', label: 'ID' },
+                  { col: 'firstname', label: 'First Name' },
+                  { col: 'lastname', label: 'Last Name' },
+                  { col: 'email', label: 'Email' },
+                  { col: 'phone', label: 'Phone' }
+                ] as {
+                  col: 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
+                  label: string;
+                }[]
+              ).map(({ col, label }) => (
+                <th key={col} className="px-4 py-3 text-left whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => handleColSort(col)}
+                    className="inline-flex items-center gap-1 font-semibold text-gray-600 uppercase tracking-wide text-xs hover:text-gray-900 transition-colors select-none"
+                    aria-label={`Sort by ${label}`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleColSort(col)}
-                      className="inline-flex items-center gap-1 font-semibold text-gray-600 uppercase tracking-wide text-xs hover:text-gray-900 transition-colors select-none"
-                      aria-label={`Sort by ${label}`}
-                    >
-                      {label}
-                      <span className="text-[10px] leading-none w-3 text-center">
-                        {sortCol === col ? (
-                          sortDir === 'asc' ? (
-                            '▲'
-                          ) : (
-                            '▼'
-                          )
+                    {label}
+                    <span className="text-[10px] leading-none w-3 text-center">
+                      {sortCol === col ? (
+                        sortDir === 'asc' ? (
+                          '▲'
                         ) : (
-                          <span className="opacity-30">⇅</span>
-                        )}
-                      </span>
-                    </button>
-                  </th>
-                ))}
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wide text-xs whitespace-nowrap">
-                  Upcoming Appointments
+                          '▼'
+                        )
+                      ) : (
+                        <span className="opacity-30">⇅</span>
+                      )}
+                    </span>
+                  </button>
                 </th>
+              ))}
+              <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wide text-xs whitespace-nowrap">
+                Upcoming Appointments
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {visiblePatients.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-12 text-center text-gray-500 text-lg"
+                >
+                  {q
+                    ? `No patients found matching "${query}".`
+                    : 'No patients found.'}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {visiblePatients.map((patient) => {
+            ) : (
+              visiblePatients.map((patient) => {
                 const appts = byPatient.get(patient.id) ?? [];
                 return (
                   <tr
@@ -377,19 +385,11 @@ export function PatientsList({ patients, appointments }: Props) {
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
-            {q
-              ? `No patients found matching "${query}".`
-              : 'No patients found.'}
-          </p>
-        </div>
-      )}
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Appointment detail bubble */}
       {selected && bubblePos && (
