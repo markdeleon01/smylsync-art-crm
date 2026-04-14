@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { APPOINTMENT_DURATIONS } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -85,7 +86,10 @@ interface Props {
 }
 
 export function PatientsList({ patients, appointments }: Props) {
+  type SortCol = 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
+  type ViewMode = 'grid' | 'list';
   const [selected, setSelected] = useState<ApptRow | null>(null);
+  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null);
   const [bubblePos, setBubblePos] = useState<{
     left: number;
     top: number;
@@ -93,7 +97,7 @@ export function PatientsList({ patients, appointments }: Props) {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [query, setQuery] = useState('');
-  type SortCol = 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortCol, setSortCol] = useState<SortCol>('lastname');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   // Guard: prevent the save effect from overwriting localStorage with initial
@@ -111,7 +115,8 @@ export function PatientsList({ patients, appointments }: Props) {
     if (!hasLoaded.current) return;
     sessionStorage.setItem('patients-sort-col', sortCol);
     sessionStorage.setItem('patients-sort-dir', sortDir);
-  }, [sortCol, sortDir]);
+    sessionStorage.setItem('patients-view-mode', viewMode);
+  }, [sortCol, sortDir, viewMode]);
 
   // Load — listed SECOND; sets hasLoaded=true at the end.
   // The cleanup resets hasLoaded to false so that when React StrictMode
@@ -128,6 +133,10 @@ export function PatientsList({ patients, appointments }: Props) {
     if (savedSearch) {
       setInputValue(savedSearch);
       setQuery(savedSearch);
+    }
+    const savedViewMode = sessionStorage.getItem('patients-view-mode');
+    if (savedViewMode === 'grid' || savedViewMode === 'list') {
+      setViewMode(savedViewMode);
     }
     hasLoaded.current = true;
     return () => {
@@ -235,6 +244,35 @@ export function PatientsList({ patients, appointments }: Props) {
     setBubblePos({ left, top });
   }
 
+  function renderAppointmentBadges(appts: ApptRow[]) {
+    if (appts.length === 0) {
+      return (
+        <span className="inline-flex items-center rounded border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-gray-500">
+          None
+        </span>
+      );
+    }
+
+    return appts.map((appt) => {
+      const colorCls =
+        TYPE_COLORS[appt.appointment_type] ??
+        'bg-gray-100 border-gray-400 text-gray-800';
+      return (
+        <button
+          key={appt.id}
+          type="button"
+          onClick={(e) => handleBadgeClick(e, appt)}
+          className={`inline-flex cursor-pointer items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all hover:brightness-95 ${colorCls} ${selected?.id === appt.id ? 'ring-2 ring-offset-1 ring-gray-600' : ''}`}
+        >
+          {formatType(appt.appointment_type)}
+          <span className="opacity-70">
+            · {formatDate(appt.start_time)} {formatTime(appt.start_time)}
+          </span>
+        </button>
+      );
+    });
+  }
+
   return (
     <>
       {/* Heading and controls */}
@@ -246,7 +284,31 @@ export function PatientsList({ patients, appointments }: Props) {
             patient, or to look up a patient by name, email, or ID.
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:items-end">
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div
+            className="inline-flex rounded-md border border-gray-200 bg-white p-1"
+            role="tablist"
+            aria-label="Patient view mode"
+          >
+            {(['list', 'grid'] as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                role="tab"
+                aria-selected={viewMode === mode}
+                aria-label={`Show patients in ${mode} view`}
+                onClick={() => setViewMode(mode)}
+                className={cn(
+                  'rounded px-3 py-1.5 text-sm font-medium capitalize transition-colors',
+                  viewMode === mode
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                )}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
           <form
             className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
             onSubmit={(e) => {
@@ -275,121 +337,187 @@ export function PatientsList({ patients, appointments }: Props) {
         </div>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b">
-              {(
-                [
-                  { col: 'id', label: 'ID' },
-                  { col: 'firstname', label: 'First Name' },
-                  { col: 'lastname', label: 'Last Name' },
-                  { col: 'email', label: 'Email' },
-                  { col: 'phone', label: 'Phone' }
-                ] as {
-                  col: 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
-                  label: string;
-                }[]
-              ).map(({ col, label }) => (
-                <th key={col} className="px-4 py-3 text-left whitespace-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => handleColSort(col)}
-                    className="inline-flex items-center gap-1 font-semibold text-gray-600 uppercase tracking-wide text-xs hover:text-gray-900 transition-colors select-none"
-                    aria-label={`Sort by ${label}`}
-                  >
-                    {label}
-                    <span className="text-[10px] leading-none w-3 text-center">
-                      {sortCol === col ? (
-                        sortDir === 'asc' ? (
-                          '▲'
+      {viewMode === 'grid' ? (
+        <div className="overflow-x-auto rounded-md border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                {(
+                  [
+                    { col: 'id', label: 'ID' },
+                    { col: 'firstname', label: 'First Name' },
+                    { col: 'lastname', label: 'Last Name' },
+                    { col: 'email', label: 'Email' },
+                    { col: 'phone', label: 'Phone' }
+                  ] as {
+                    col: 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
+                    label: string;
+                  }[]
+                ).map(({ col, label }) => (
+                  <th key={col} className="px-4 py-3 text-left whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => handleColSort(col)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-600 transition-colors select-none hover:text-gray-900"
+                      aria-label={`Sort by ${label}`}
+                    >
+                      {label}
+                      <span className="w-3 text-center text-[10px] leading-none">
+                        {sortCol === col ? (
+                          sortDir === 'asc' ? (
+                            '▲'
+                          ) : (
+                            '▼'
+                          )
                         ) : (
-                          '▼'
-                        )
-                      ) : (
-                        <span className="opacity-30">⇅</span>
-                      )}
-                    </span>
-                  </button>
-                </th>
-              ))}
-              <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wide text-xs whitespace-nowrap">
-                Upcoming Appointments
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {visiblePatients.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-12 text-center text-gray-500 text-lg"
-                >
-                  {q
-                    ? `No patients found matching "${query}".`
-                    : 'No patients found.'}
-                </td>
-              </tr>
-            ) : (
-              visiblePatients.map((patient) => {
-                const appts = byPatient.get(patient.id) ?? [];
-                return (
-                  <tr
-                    key={patient.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500 whitespace-nowrap align-top">
-                      {patient.id}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap align-top">
-                      {patient.firstname}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap align-top">
-                      {patient.lastname}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 break-all align-top">
-                      {patient.email}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap align-top">
-                      {patient.phone ?? (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="flex flex-wrap gap-1.5">
-                        {appts.length === 0 ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded border border-gray-300 bg-gray-100 text-gray-500 text-xs font-medium whitespace-nowrap">
-                            None
-                          </span>
-                        ) : (
-                          appts.map((appt) => {
-                            const colorCls =
-                              TYPE_COLORS[appt.appointment_type] ??
-                              'bg-gray-100 border-gray-400 text-gray-800';
-                            return (
-                              <button
-                                key={appt.id}
-                                onClick={(e) => handleBadgeClick(e, appt)}
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium whitespace-nowrap cursor-pointer hover:brightness-95 transition-all ${colorCls} ${selected?.id === appt.id ? 'ring-2 ring-offset-1 ring-gray-600' : ''}`}
-                              >
-                                {formatType(appt.appointment_type)}
-                                <span className="opacity-70">
-                                  · {formatDate(appt.start_time)}{' '}
-                                  {formatTime(appt.start_time)}
-                                </span>
-                              </button>
-                            );
-                          })
+                          <span className="opacity-30">⇅</span>
                         )}
+                      </span>
+                    </button>
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
+                  Upcoming Appointments
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {visiblePatients.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-12 text-center text-lg text-gray-500"
+                  >
+                    {q
+                      ? `No patients found matching "${query}".`
+                      : 'No patients found.'}
+                  </td>
+                </tr>
+              ) : (
+                visiblePatients.map((patient) => {
+                  const appts = byPatient.get(patient.id) ?? [];
+                  return (
+                    <tr
+                      key={patient.id}
+                      className="transition-colors hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500 whitespace-nowrap align-top">
+                        {patient.id}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap align-top">
+                        {patient.firstname}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap align-top">
+                        {patient.lastname}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 break-all align-top">
+                        {patient.email}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap align-top">
+                        {patient.phone ?? (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex flex-wrap gap-1.5">
+                          {renderAppointmentBadges(appts)}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : visiblePatients.length === 0 ? (
+        <div className="rounded-md border px-4 py-12 text-center text-lg text-gray-500">
+          {q ? `No patients found matching "${query}".` : 'No patients found.'}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visiblePatients.map((patient) => {
+            const appts = byPatient.get(patient.id) ?? [];
+            const isExpanded = expandedPatientId === patient.id;
+
+            return (
+              <article
+                key={patient.id}
+                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedPatientId((current) =>
+                      current === patient.id ? null : patient.id
+                    )
+                  }
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50"
+                  aria-expanded={isExpanded}
+                  aria-controls={`patient-card-${patient.id}`}
+                >
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {patient.lastname}, {patient.firstname}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Click to {isExpanded ? 'collapse' : 'expand'} details
+                    </p>
+                  </div>
+                  <span
+                    className="min-w-6 text-center text-2xl font-medium leading-none text-gray-500"
+                    aria-hidden="true"
+                  >
+                    {isExpanded ? '-' : '+'}
+                  </span>
+                </button>
+
+                {isExpanded && (
+                  <div
+                    id={`patient-card-${patient.id}`}
+                    className="border-t border-gray-100 bg-gray-50 px-5 py-4"
+                  >
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Patient ID
+                        </p>
+                        <p className="font-mono text-sm text-gray-700">
+                          {patient.id}
+                        </p>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Email
+                        </p>
+                        <p className="text-sm text-gray-700 break-all">
+                          {patient.email}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Phone
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          {patient.phone ?? '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Upcoming Appointments
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {renderAppointmentBadges(appts)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {/* Appointment detail bubble */}
       {selected && bubblePos && (

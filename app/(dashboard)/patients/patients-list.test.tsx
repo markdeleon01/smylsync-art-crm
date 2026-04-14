@@ -60,6 +60,15 @@ describe('PatientsList – rendering', () => {
     expect(screen.getByText('Bob')).toBeInTheDocument();
   });
 
+  it('defaults to list view', () => {
+    render(<PatientsList patients={[makePatient()]} appointments={[]} />);
+    expect(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('Doe, Jane')).toBeInTheDocument();
+  });
+
   it('displays patient id, name, and email in the row', () => {
     const p = makePatient({
       id: 'pat-xyz',
@@ -442,6 +451,86 @@ describe('PatientsList – search', () => {
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
     expect(screen.getByText('Smith')).toBeInTheDocument();
     expect(screen.queryByText('Jones')).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// View toggle
+// ---------------------------------------------------------------------------
+
+describe('PatientsList – view toggle', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
+
+  it('switches to list view and hides the grid table', () => {
+    render(<PatientsList patients={[makePatient()]} appointments={[]} />);
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    );
+
+    expect(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('Doe, Jane')).toBeInTheDocument();
+  });
+
+  it('expands a patient card to show full details', () => {
+    const patient = makePatient({
+      id: 'pat-123',
+      firstname: 'Jane',
+      lastname: 'Doe',
+      email: 'jane@example.com',
+      phone: '(213) 555-0101'
+    });
+
+    render(<PatientsList patients={[patient]} appointments={[]} />);
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
+
+    expect(screen.getByText('Patient ID')).toBeInTheDocument();
+    expect(screen.getByText('pat-123')).toBeInTheDocument();
+    expect(screen.getByText('jane@example.com')).toBeInTheDocument();
+    expect(screen.getByText('(213) 555-0101')).toBeInTheDocument();
+  });
+
+  it('collapses the patient card when clicked again', () => {
+    render(<PatientsList patients={[makePatient()]} appointments={[]} />);
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    );
+    const toggle = screen.getByRole('button', { name: /Doe, Jane/i });
+    fireEvent.click(toggle);
+    expect(screen.getByText('Patient ID')).toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(screen.queryByText('Patient ID')).not.toBeInTheDocument();
+  });
+
+  it('persists the selected view mode in sessionStorage', () => {
+    render(<PatientsList patients={[makePatient()]} appointments={[]} />);
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    );
+
+    expect(sessionStorage.getItem('patients-view-mode')).toBe('list');
+  });
+
+  it('restores the selected view mode from sessionStorage', () => {
+    sessionStorage.setItem('patients-view-mode', 'list');
+
+    render(<PatientsList patients={[makePatient()]} appointments={[]} />);
+
+    expect(
+      screen.getByRole('tab', { name: /Show patients in list view/i })
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 });
 
