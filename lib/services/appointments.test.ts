@@ -52,6 +52,13 @@ beforeEach(() => {
     vi.clearAllMocks();
     // Default: POSTGRES_URL must be defined (neon() is already mocked)
     process.env.POSTGRES_URL = 'postgresql://mock';
+    delete process.env.CLINIC_HOURS_MONDAY;
+    delete process.env.CLINIC_HOURS_TUESDAY;
+    delete process.env.CLINIC_HOURS_WEDNESDAY;
+    delete process.env.CLINIC_HOURS_THURSDAY;
+    delete process.env.CLINIC_HOURS_FRIDAY;
+    delete process.env.CLINIC_HOURS_SATURDAY;
+    delete process.env.CLINIC_HOURS_SUNDAY;
 });
 
 // ---------------------------------------------------------------------------
@@ -385,6 +392,24 @@ describe('getAvailableSlots', () => {
         // Slots from 08:00 to 15:00 = 14 slots
         expect(slots.length).toBeLessThan(18);
         expect(slots.length).toBeGreaterThan(0);
+    });
+
+    it('returns no slots when the configured day is closed', async () => {
+        process.env.CLINIC_HOURS_TUESDAY = 'closed';
+        mockSql.mockResolvedValueOnce([]);
+
+        const slots = await getAvailableSlots('2026-05-05', 'checkup');
+
+        expect(slots).toEqual([]);
+    });
+
+    it('respects configured opening and closing hours', async () => {
+        process.env.CLINIC_HOURS_TUESDAY = '09:00-12:00';
+        mockSql.mockResolvedValueOnce([]);
+
+        const slots = await getAvailableSlots('2026-05-05', 'checkup');
+
+        expect(slots).toHaveLength(6);
     });
 });
 
