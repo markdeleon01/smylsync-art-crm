@@ -352,8 +352,8 @@ describe('getAvailableSlots', () => {
     it('returns all slots when no appointments exist on that day', async () => {
         mockSql.mockResolvedValueOnce([]); // no existing appointments
         const slots = await getAvailableSlots('2026-05-05', 'checkup'); // checkup = 30 min
-        // 8:00–17:00 = 18 × 30-min slots
-        expect(slots.length).toBe(18);
+        // 8:00–20:00 = 24 × 30-min slots
+        expect(slots.length).toBe(24);
     });
 
     it('removes slots that conflict with an existing appointment', async () => {
@@ -366,13 +366,13 @@ describe('getAvailableSlots', () => {
             { start_time: apptStart.toISOString(), end_time: apptEnd.toISOString() }
         ]);
         const slots = await getAvailableSlots('2026-05-05', 'checkup');
-        // 18 total minus 2 blocked = 16
-        expect(slots.length).toBeLessThan(18);
+        // 24 total minus 2 blocked = 22
+        expect(slots.length).toBeLessThan(24);
     });
 
     it('returns empty array when the day is fully booked', async () => {
-        // Fill every 30-min slot from 08:00–17:00 using local time (same as generateDaySlots)
-        const existing = Array.from({ length: 18 }, (_, i) => {
+        // Fill every 30-min slot from 08:00–20:00 using local time (same as generateDaySlots)
+        const existing = Array.from({ length: 24 }, (_, i) => {
             const startH = 8 + Math.floor(i / 2);
             const startM = (i % 2) * 30;
             const start = new Date('2026-05-05');
@@ -387,10 +387,10 @@ describe('getAvailableSlots', () => {
 
     it('removes slots too short for a long appointment type', async () => {
         mockSql.mockResolvedValueOnce([]); // no conflicts
-        // root-canal = 120 min → last valid start is 15:00 (17:00 - 2h)
+        // root-canal = 120 min → last valid start is 18:00 (20:00 - 2h)
         const slots = await getAvailableSlots('2026-05-05', 'root-canal');
-        // Slots from 08:00 to 15:00 = 14 slots
-        expect(slots.length).toBeLessThan(18);
+        // Slots from 08:00 to 18:00 = 20 slots
+        expect(slots.length).toBeLessThan(24);
         expect(slots.length).toBeGreaterThan(0);
     });
 
