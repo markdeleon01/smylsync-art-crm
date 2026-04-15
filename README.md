@@ -23,7 +23,7 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 - Language - [TypeScript 5.7.2](https://www.typescriptlang.org)
 - Styling - [Tailwind CSS 3.4.17](https://tailwindcss.com)
 - UI Components - [Shadcn UI](https://ui.shadcn.com/) with Lucide React icons
-- Authentication - [NextAuth.js 5.0.0-beta.30](https://authjs.dev) (GitHub OAuth)
+- Authentication - Custom JWT with email/password
 - Database - [PostgreSQL via Neon](https://neon.tech) with [Drizzle ORM](https://orm.drizzle.team)
 - Deployment - [Netlify](https://netlify.com) (Next.js plugin + scheduled functions)
 - Formatting - [Prettier](https://prettier.io)
@@ -38,7 +38,7 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 **Email:**
 
 - [Nodemailer](https://nodemailer.com) over SMTP — booking confirmations, rescheduling notices, cancellation notices, and 24-hour reminder emails
-- Automated reminders via a Netlify scheduled function running every hour
+- Automated reminders via GitHub Actions cron job running every hour
 
 **Testing & Quality:**
 
@@ -53,11 +53,49 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 - 🗓️ **Schedules Calendar** - Week/day/month calendar view of all appointments with colour-coded appointment types
 - 👥 **Patient Management** - Browse, search, sort, and view patients with their upcoming appointments; full CRUD via ART
 - 📧 **Email Notifications** - Booking confirmations, rescheduling notices, cancellation notices, and automated 24-hour reminders
-- 🔐 **GitHub OAuth** - Secure authentication via NextAuth.js
+- 🔐 **Authentication** - Secure login with email and password for staff access
 - 📱 **Responsive Design** - Mobile-friendly layouts with responsive sidebar navigation
 - 🧪 **Comprehensive Tests** - 224 unit tests + 114 e2e tests
 - 🔄 **CI/CD Pipeline** - Automated testing and deployment with CircleCI
 - 🎨 **Modern UI** - Shadcn UI components with Tailwind CSS
+
+## MCP Tools
+
+The ART agent is powered by a Model Context Protocol (MCP) server with 28 registered tools for managing dental practice operations. The server is stateless and uses HTTP transport.
+
+### Patient Management Tools (14 tools)
+
+- `get_all_patients` - Retrieve all patient records
+- `get_patient_by_id` - Get patient by ID
+- `get_patients_by_lastname` - Search patients by last name
+- `get_patients_by_firstname` - Search patients by first name
+- `get_patient_by_email` - Get patient by email
+- `update_patient_firstname` - Update patient's first name
+- `update_patient_lastname` - Update patient's last name
+- `update_patient_email` - Update patient's email
+- `update_patient_phone` - Update patient's phone number
+- `create_new_patient` - Create a new patient record
+- `delete_patient_by_id` - Delete patient by ID
+- `delete_patient_by_lastname` - Delete patients by last name
+- `delete_patient_by_firstname` - Delete patients by first name
+- `delete_patient_by_email` - Delete patient by email
+
+### Appointment Management Tools (14 tools)
+
+- `get_all_appointments` - Retrieve all appointments
+- `get_appointment_by_id` - Get appointment by ID
+- `get_appointments_by_patient` - Get appointments for a patient
+- `get_appointments_by_date` - Get appointments on a specific date
+- `get_available_slots` - Find available time slots
+- `book_appointment` - Book a new appointment
+- `rebook_appointment` - Reschedule an existing appointment
+- `cancel_appointment` - Cancel an appointment
+- `complete_appointment` - Mark appointment as completed
+- `send_reminder` - Send manual reminder email
+- `send_booking_confirmation` - Send booking confirmation email
+- `send_rescheduling_notification` - Send rescheduling notification
+- `send_cancellation_notice` - Send cancellation notice
+- `autofill_schedule` - Auto-fill schedule with overdue patients
 
 ## Getting Started
 
@@ -65,7 +103,6 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 
 - Node.js 20+
 - [pnpm](https://pnpm.io) package manager (`npm install -g pnpm`)
-- GitHub account (for OAuth setup)
 - PostgreSQL database (e.g. [Neon](https://neon.tech) free tier)
 - OpenAI API key
 - SMTP credentials for email (optional but required for email features)
@@ -85,17 +122,16 @@ pnpm install
 Create a `.env` file in the project root and configure the following variables:
 
 ```bash
-# Auth
-AUTH_SECRET=          # Generate with: openssl rand -base64 32
-AUTH_GITHUB_ID=       # From your GitHub OAuth app
-AUTH_GITHUB_SECRET=   # From your GitHub OAuth app
-NEXTAUTH_URL=http://localhost:8080
-
 # Database
 DATABASE_URL=         # PostgreSQL connection string (e.g. Neon)
 
 # AI
 OPENAI_API_KEY=       # OpenAI API key
+
+# Authentication
+BCRYPT_SALT_ROUNDS=12
+BCRYPT_PEPPER=        # Random string for password hashing
+JWT_SECRET=           # Random string for JWT signing
 
 # Email (optional — emails are silently skipped if omitted)
 SMTP_HOST=
@@ -105,7 +141,7 @@ SMTP_PASS=
 SMTP_FROM=            # e.g. noreply@yourdomain.com
 SMTP_FROM_NAME=       # e.g. SMYLSYNC
 
-# Automated reminders (required for the Netlify cron function)
+# Automated reminders (required for the GitHub Actions cron job)
 CRON_SECRET=          # Any strong random string
 URL=                  # Public base URL in production (set automatically by Netlify)
 ```
@@ -127,6 +163,20 @@ pnpm run dev
 ```
 
 The application will be available at `http://localhost:8080`.
+
+### Setting up Automated Reminders
+
+Since Netlify scheduled functions require a paid plan, automated appointment reminders are handled via GitHub Actions:
+
+1. **Set up GitHub Secrets:**
+
+   - Go to your repository Settings → Secrets and variables → Actions
+   - Add `SITE_URL`: Your deployed Netlify site URL (e.g., `https://your-site.netlify.app`)
+   - Add `CRON_SECRET`: The same value as your `CRON_SECRET` environment variable
+
+2. **The workflow will automatically run every hour** to send appointment reminders.
+
+**Note:** The `/api/reminders` endpoint is configured as a public API route that accepts Bearer token authentication for automated cron jobs.
 
 ### Available Scripts
 
@@ -295,7 +345,7 @@ install-and-cache
 
 2. **Set Environment Variables in CircleCI:**
 
-   In the CircleCI project settings, add the same variables from your `.env` file. At minimum, `DATABASE_URL`, `OPENAI_API_KEY`, and `AUTH_SECRET` are required for the build to succeed.
+   In the CircleCI project settings, add the same variables from your `.env` file. At minimum, `DATABASE_URL`, `OPENAI_API_KEY`, and `JWT_SECRET` are required for the build to succeed.
 
 3. **Monitor Results:**
    - **CircleCI Dashboard:** [app.circleci.com](https://app.circleci.com)
@@ -347,7 +397,6 @@ components/
   └── ui/                     # Shadcn UI components
 
 lib/
-  ├── auth.ts                 # NextAuth.js configuration
   ├── db.ts                   # Neon/Postgres connection
   ├── types.ts                # Shared types (Patient, Appointment, APPOINTMENT_TYPES)
   ├── hooks/
@@ -359,7 +408,11 @@ lib/
 
 netlify/
   └── functions/
-      └── send-reminders.ts   # Scheduled function: calls /api/reminders every hour
+      └── send-reminders.ts   # Legacy Netlify function (scheduled functions require paid plan)
+
+.github/
+  └── workflows/
+      └── send-reminders.yml  # GitHub Actions workflow for automated reminders
 
 scripts/
   ├── migrate.ts              # Run database migrations
