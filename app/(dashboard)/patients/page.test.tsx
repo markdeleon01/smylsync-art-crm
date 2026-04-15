@@ -90,7 +90,9 @@ describe('Patients Page', () => {
     expect(container.textContent).toContain('Jane');
     expect(container.textContent).toContain('Smith');
     // Expand the card to reveal the patient ID
-    const expandBtn = container.querySelector('button[aria-controls]') as HTMLElement;
+    const expandBtn = container.querySelector(
+      'button[aria-controls]'
+    ) as HTMLElement;
     if (expandBtn) fireEvent.click(expandBtn);
     expect(container.textContent).toContain('123');
   });
@@ -103,7 +105,9 @@ describe('Patients Page', () => {
     const result = await PatientsPage();
     const { container } = render(result as any);
     // Expand the card to reveal the appointment badge
-    const expandBtn = container.querySelector('button[aria-controls]') as HTMLElement;
+    const expandBtn = container.querySelector(
+      'button[aria-controls]'
+    ) as HTMLElement;
     if (expandBtn) fireEvent.click(expandBtn);
     // Appointment type badge should appear via PatientsList
     expect(container.textContent).toContain('Checkup');
@@ -115,7 +119,9 @@ describe('Patients Page', () => {
     const result = await PatientsPage();
     const { container } = render(result as any);
     // Expand the card to reveal the appointments section
-    const expandBtn = container.querySelector('button[aria-controls]') as HTMLElement;
+    const expandBtn = container.querySelector(
+      'button[aria-controls]'
+    ) as HTMLElement;
     if (expandBtn) fireEvent.click(expandBtn);
     expect(container.textContent).toContain('None');
   });
@@ -132,11 +138,15 @@ describe('Patients Page', () => {
     const result = await PatientsPage();
     const { container } = render(result as any);
     // Expand first patient card and check their appointment
-    const firstBtn = container.querySelector('button[aria-controls]') as HTMLElement;
+    const firstBtn = container.querySelector(
+      'button[aria-controls]'
+    ) as HTMLElement;
     if (firstBtn) fireEvent.click(firstBtn);
     expect(container.textContent).toContain('Checkup');
     // Expand second patient card (auto-collapses first) and check their appointment
-    const secondBtn = container.querySelectorAll('button[aria-controls]')[1] as HTMLElement;
+    const secondBtn = container.querySelectorAll(
+      'button[aria-controls]'
+    )[1] as HTMLElement;
     if (secondBtn) fireEvent.click(secondBtn);
     expect(container.textContent).toContain('Cleaning');
   });
@@ -148,7 +158,9 @@ describe('Patients Page', () => {
     const result = await PatientsPage();
     const { container } = render(result as any);
     // Expand the card to reveal phone
-    const expandBtn = container.querySelector('button[aria-controls]') as HTMLElement;
+    const expandBtn = container.querySelector(
+      'button[aria-controls]'
+    ) as HTMLElement;
     if (expandBtn) fireEvent.click(expandBtn);
     expect(container.textContent).toContain('(213) 555-0101');
   });
@@ -160,7 +172,9 @@ describe('Patients Page', () => {
     const result = await PatientsPage();
     const { container } = render(result as any);
     // Expand the card to reveal phone section
-    const expandBtn = container.querySelector('button[aria-controls]') as HTMLElement;
+    const expandBtn = container.querySelector(
+      'button[aria-controls]'
+    ) as HTMLElement;
     if (expandBtn) fireEvent.click(expandBtn);
     expect(container.textContent).toContain('—');
   });
