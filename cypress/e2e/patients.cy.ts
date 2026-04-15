@@ -281,6 +281,7 @@ describe('Patients Page – sort column headers', () => {
     beforeEach(() => {
         cy.login();
         cy.visit('/patients');
+        cy.get('[aria-label="Show patients in grid view"]').click();
     });
 
     it('sort column header buttons are present', () => {

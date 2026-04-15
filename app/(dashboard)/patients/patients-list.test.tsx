@@ -55,10 +55,9 @@ describe('PatientsList – rendering', () => {
       makePatient({ id: 'p2', firstname: 'Bob', lastname: 'Jones' })
     ];
     render(<PatientsList patients={patients} appointments={[]} />);
-    expect(screen.getByText('Smith')).toBeInTheDocument();
-    expect(screen.getByText('Alice')).toBeInTheDocument();
-    expect(screen.getByText('Jones')).toBeInTheDocument();
-    expect(screen.getByText('Bob')).toBeInTheDocument();
+    // In list view the card header shows "Lastname, Firstname"
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
   });
 
   it('defaults to list view', () => {
@@ -78,15 +77,19 @@ describe('PatientsList – rendering', () => {
       email: 'carlos@clinic.com'
     });
     render(<PatientsList patients={[p]} appointments={[]} />);
+    // Name is visible in the card header in list view
+    expect(screen.getByText('Ray, Carlos')).toBeInTheDocument();
+    // Expand the card to reveal ID and email
+    fireEvent.click(screen.getByRole('button', { name: /Ray, Carlos/i }));
     expect(screen.getByText('pat-xyz')).toBeInTheDocument();
-    expect(screen.getByText('Carlos')).toBeInTheDocument();
-    expect(screen.getByText('Ray')).toBeInTheDocument();
     expect(screen.getByText('carlos@clinic.com')).toBeInTheDocument();
   });
 
   it('shows "None" badge when patient has no appointments', () => {
     const p = makePatient();
     render(<PatientsList patients={[p]} appointments={[]} />);
+    // Expand the card to reveal the appointments section
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     expect(screen.getByText('None')).toBeInTheDocument();
   });
 
@@ -112,6 +115,8 @@ describe('PatientsList – appointment badges', () => {
       makeAppt({ id: 'a2', appointment_type: 'cleaning' })
     ];
     render(<PatientsList patients={[p]} appointments={appts} />);
+    // Expand the card to reveal appointment badges
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     expect(screen.getByText(/Checkup/i)).toBeInTheDocument();
     expect(screen.getByText(/Cleaning/i)).toBeInTheDocument();
   });
@@ -120,6 +125,8 @@ describe('PatientsList – appointment badges', () => {
     const p = makePatient();
     const appt = makeAppt({ start_time: '2026-05-10T09:00:00.000Z' });
     render(<PatientsList patients={[p]} appointments={[appt]} />);
+    // Expand the card to reveal appointment badges
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     // The badge text contains a formatted date (e.g. "May 10, 2026")
     const badge = screen.getByRole('button', { name: /Checkup/i });
     expect(badge.textContent).toMatch(/May/i);
@@ -139,7 +146,13 @@ describe('PatientsList – appointment badges', () => {
       appointment_type: 'extraction'
     });
     render(<PatientsList patients={[p1, p2]} appointments={[appt1, appt2]} />);
+    // Expand patient A — only their Checkup badge should appear
+    fireEvent.click(screen.getByRole('button', { name: /A, Alice/i }));
     expect(screen.getByText(/Checkup/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Extraction/i)).not.toBeInTheDocument();
+    // Expand patient B (auto-collapses A) — only their Extraction badge should appear
+    fireEvent.click(screen.getByRole('button', { name: /B, Bob/i }));
+    expect(screen.queryByText(/Checkup/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Extraction/i)).toBeInTheDocument();
   });
 
@@ -149,6 +162,8 @@ describe('PatientsList – appointment badges', () => {
     const { container } = render(
       <PatientsList patients={[p]} appointments={[appt]} />
     );
+    // Expand the card to reveal appointment badges
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     const badge = container.querySelector('.bg-teal-100');
     expect(badge).toBeTruthy();
   });
@@ -281,6 +296,8 @@ describe('PatientsList – multiple appointments per patient', () => {
       })
     ];
     render(<PatientsList patients={[p]} appointments={appts} />);
+    // Expand the card to reveal appointment badges
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     expect(screen.getByText(/Checkup/i)).toBeInTheDocument();
     expect(screen.getByText(/Cleaning/i)).toBeInTheDocument();
     expect(screen.getByText(/X Ray/i)).toBeInTheDocument();
@@ -299,6 +316,8 @@ describe('PatientsList – upcoming-only contract', () => {
     const p = makePatient();
     const appt = makeAppt({ start_time: '2026-05-01T09:00:00.000Z' });
     render(<PatientsList patients={[p]} appointments={[appt]} />);
+    // Expand the card to reveal the appointment badge
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     expect(
       screen.getByRole('button', { name: /Checkup/i })
     ).toBeInTheDocument();
@@ -335,7 +354,6 @@ describe('PatientsList – search', () => {
   ];
 
   it('renders the search input and button', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     expect(
       screen.getByRole('textbox', { name: /Search patients/i })
@@ -344,76 +362,70 @@ describe('PatientsList – search', () => {
   });
 
   it('shows all patients when search is empty', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
-    expect(screen.getByText('Smith')).toBeInTheDocument();
-    expect(screen.getByText('Jones')).toBeInTheDocument();
-    expect(screen.getByText('Brown')).toBeInTheDocument();
+    // In list view the card header shows "Lastname, Firstname"
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
   });
 
   it('filters by first name', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: 'Alice' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Smith')).toBeInTheDocument();
-    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
-    expect(screen.queryByText('Brown')).not.toBeInTheDocument();
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
+    expect(screen.queryByText('Brown, Carol')).not.toBeInTheDocument();
   });
 
   it('filters by last name', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: 'Jones' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Jones')).toBeInTheDocument();
-    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
   });
 
   it('filters by email address', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: 'carol@example.com' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Brown')).toBeInTheDocument();
-    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
   });
 
   it('filters by patient ID', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: 'p2' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Jones')).toBeInTheDocument();
-    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
-    expect(screen.queryByText('Brown')).not.toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.queryByText('Brown, Carol')).not.toBeInTheDocument();
   });
 
   it('is case-insensitive', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: 'ALICE' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Smith')).toBeInTheDocument();
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
   });
 
   it('shows no-results message when nothing matches', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
@@ -424,53 +436,49 @@ describe('PatientsList – search', () => {
   });
 
   it('restores all patients when input is cleared', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     const input = screen.getByRole('textbox', { name: /Search patients/i });
     fireEvent.change(input, { target: { value: 'Alice' } });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
     // Clear the input — all patients should reappear immediately
     fireEvent.change(input, { target: { value: '' } });
-    expect(screen.getByText('Jones')).toBeInTheDocument();
-    expect(screen.getByText('Brown')).toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
   });
 
   it('filters by partial email domain', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: '@clinic' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Jones')).toBeInTheDocument();
-    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
+    expect(screen.getByText('Jones, Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
   });
 
   it('filters by phone number', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: '(415) 555-0303' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Brown')).toBeInTheDocument();
-    expect(screen.queryByText('Smith')).not.toBeInTheDocument();
-    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
+    expect(screen.getByText('Brown, Carol')).toBeInTheDocument();
+    expect(screen.queryByText('Smith, Alice')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
   });
 
   it('filters by partial phone number', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     render(<PatientsList patients={patients} appointments={[]} />);
     fireEvent.change(
       screen.getByRole('textbox', { name: /Search patients/i }),
       { target: { value: '(213)' } }
     );
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    expect(screen.getByText('Smith')).toBeInTheDocument();
-    expect(screen.queryByText('Jones')).not.toBeInTheDocument();
+    expect(screen.getByText('Smith, Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Jones, Bob')).not.toBeInTheDocument();
   });
 });
 
@@ -536,10 +544,10 @@ describe('PatientsList – view toggle', () => {
     render(<PatientsList patients={[makePatient()]} appointments={[]} />);
 
     fireEvent.click(
-      screen.getByRole('tab', { name: /Show patients in list view/i })
+      screen.getByRole('tab', { name: /Show patients in grid view/i })
     );
 
-    expect(sessionStorage.getItem('patients-view-mode')).toBe('list');
+    expect(sessionStorage.getItem('patients-view-mode')).toBe('grid');
   });
 
   it('restores the selected view mode from sessionStorage', () => {
@@ -668,16 +676,18 @@ describe('PatientsList – sorting', () => {
 
 describe('PatientsList – phone display', () => {
   it('shows the phone number on the card when phone is non-null', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     const p = makePatient({ phone: '(213) 555-0101' });
     render(<PatientsList patients={[p]} appointments={[]} />);
+    // Expand the card to reveal phone
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     expect(screen.getByText('(213) 555-0101')).toBeInTheDocument();
   });
 
   it('shows em-dash in the phone column when phone is null', () => {
-    sessionStorage.setItem('patients-view-mode', 'grid');
     const p = makePatient({ phone: null });
     render(<PatientsList patients={[p]} appointments={[]} />);
+    // Expand the card to reveal phone section
+    fireEvent.click(screen.getByRole('button', { name: /Doe, Jane/i }));
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 });
