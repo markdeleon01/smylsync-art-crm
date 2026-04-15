@@ -9,16 +9,19 @@ import {
   getDayAppointments
 } from './actions';
 import { APPOINTMENT_DURATIONS } from '@/lib/types';
+import {
+  getBusinessHoursBounds,
+  getBusinessHoursForDate,
+  type ClinicBusinessHours
+} from '@/lib/clinic-hours';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const BUSINESS_START = 8; // 8 AM
-const BUSINESS_END = 20; // 8 PM
-const TOTAL_MINS = (BUSINESS_END - BUSINESS_START) * 60; // 720 min
-const PX_PER_MIN = 1.0; // 30px per 30-min slot
-const COLUMN_HEIGHT = TOTAL_MINS * PX_PER_MIN; // 720px
+const PX_PER_MIN = 1.0;
+const SLOT_INTERVAL_MINUTES = 15;
+const LABEL_INTERVAL_MINUTES = 30;
 
 const DAY_NAMES = [
   'Monday',
@@ -94,8 +97,8 @@ function isToday(date: Date): boolean {
   );
 }
 
-function minsFromBusinessStart(dt: Date): number {
-  return (dt.getHours() - BUSINESS_START) * 60 + dt.getMinutes();
+function minsFromBusinessStart(dt: Date, businessStartMinutes: number): number {
+  return dt.getHours() * 60 + dt.getMinutes() - businessStartMinutes;
 }
 
 function formatTime(dt: Date): string {
@@ -113,21 +116,42 @@ function formatAppointmentType(type: string): string {
     .join(' ');
 }
 
-// Generate time-axis labels (every 30 min, including the end boundary at 8:00 PM)
-const TIME_LABELS = Array.from(
-  { length: (BUSINESS_END - BUSINESS_START) * 2 + 1 },
-  (_, i) => {
-    const totalMins = i * 30;
-    const hour = BUSINESS_START + Math.floor(totalMins / 60);
-    const min = totalMins % 60;
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return {
-      label: `${displayHour}:${min.toString().padStart(2, '0')} ${period}`,
-      top: totalMins * PX_PER_MIN
-    };
-  }
-);
+function formatMinutesLabel(totalMinutes: number): string {
+  const hour = Math.floor(totalMinutes / 60);
+  const min = totalMinutes % 60;
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+
+  return `${displayHour}:${min.toString().padStart(2, '0')} ${period}`;
+}
+
+function buildTimeLabels(startMinutes: number, endMinutes: number) {
+  const totalMinutes = endMinutes - startMinutes;
+  return Array.from(
+    { length: Math.floor(totalMinutes / LABEL_INTERVAL_MINUTES) + 1 },
+    (_, i) => {
+      const minutes = startMinutes + i * LABEL_INTERVAL_MINUTES;
+      return {
+        label: formatMinutesLabel(minutes),
+        top: (minutes - startMinutes) * PX_PER_MIN
+      };
+    }
+  );
+}
+
+function buildSlotLines(startMinutes: number, endMinutes: number) {
+  const totalMinutes = endMinutes - startMinutes;
+  return Array.from(
+    { length: Math.floor(totalMinutes / SLOT_INTERVAL_MINUTES) + 1 },
+    (_, i) => {
+      const minutes = startMinutes + i * SLOT_INTERVAL_MINUTES;
+      return {
+        key: minutes,
+        top: (minutes - startMinutes) * PX_PER_MIN
+      };
+    }
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -501,12 +525,27 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
 
 interface DayViewProps {
   dayDate: Date;
+  isClosed: boolean;
   appointments: AppointmentRow[];
   isLoading: boolean;
   nowTopPx: number | null;
+  timeLabels: Array<{ label: string; top: number }>;
+  slotLines: Array<{ key: number; top: number }>;
+  columnHeight: number;
+  businessStartMinutes: number;
 }
 
-function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
+function DayView({
+  dayDate,
+  isClosed,
+  appointments,
+  isLoading,
+  nowTopPx,
+  timeLabels,
+  slotLines,
+  columnHeight,
+  businessStartMinutes
+}: DayViewProps) {
   const [selected, setSelected] = useState<AppointmentRow | null>(null);
   const [bubblePos, setBubblePos] = useState<{
     left: number;
@@ -559,14 +598,16 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
           <div
             className={`py-3 px-4 flex items-center gap-3 ${todayHighlight ? 'text-orange-500' : 'text-muted-foreground'}`}
           >
-            <span
+            <div
               className={`text-2xl font-bold w-10 h-10 flex items-center justify-center rounded-full shrink-0 ${
                 todayHighlight ? 'bg-orange-500 text-white' : 'text-gray-800'
               }`}
             >
               {dayNum}
-            </span>
-            <span className="text-sm font-semibold">{dayName}</span>
+            </div>
+            <div>
+              <span className="block text-sm font-semibold">{dayName}</span>
+            </div>
           </div>
         </div>
 
@@ -578,9 +619,9 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
           {/* Time labels */}
           <div
             className="relative border-r select-none"
-            style={{ height: COLUMN_HEIGHT }}
+            style={{ height: columnHeight }}
           >
-            {TIME_LABELS.map(({ label, top }) => (
+            {timeLabels.map(({ label, top }) => (
               <span
                 key={label}
                 className="absolute right-1 text-[10px] text-muted-foreground leading-none"
@@ -591,10 +632,10 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
             ))}
           </div>
 
-          {/* 30-min grid lines */}
-          {TIME_LABELS.map(({ top }) => (
+          {/* 15-min grid lines */}
+          {slotLines.map(({ key, top }) => (
             <div
-              key={top}
+              key={key}
               className="absolute left-14 right-0 border-t border-muted/50 pointer-events-none"
               style={{ top }}
             />
@@ -603,7 +644,7 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
           {/* Appointment column */}
           <div
             className={`relative ${todayHighlight ? 'bg-orange-50/30' : ''}`}
-            style={{ height: COLUMN_HEIGHT }}
+            style={{ height: columnHeight }}
           >
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -622,7 +663,13 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
               </div>
             )}
 
-            {!isLoading && appointments.length === 0 && (
+            {!isLoading && isClosed && appointments.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                Clinic is closed for this day
+              </div>
+            )}
+
+            {!isLoading && !isClosed && appointments.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                 No appointments scheduled for this day
               </div>
@@ -632,7 +679,9 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
               appointments.map((appt) => {
                 const start = new Date(appt.start_time);
                 const end = new Date(appt.end_time);
-                const topPx = minsFromBusinessStart(start) * PX_PER_MIN;
+                const topPx =
+                  minsFromBusinessStart(start, businessStartMinutes) *
+                  PX_PER_MIN;
                 const durationMins = (end.getTime() - start.getTime()) / 60000;
                 const heightPx = Math.max(durationMins * PX_PER_MIN, 22);
                 const colorCls =
@@ -704,16 +753,37 @@ function DayView({ dayDate, appointments, isLoading, nowTopPx }: DayViewProps) {
 // Main calendar component
 // ---------------------------------------------------------------------------
 
-export function SchedulesCalendar() {
+interface SchedulesCalendarProps {
+  businessHours: ClinicBusinessHours;
+}
+
+export function SchedulesCalendar({
+  businessHours
+}: SchedulesCalendarProps) {
   const [view, setView] = useState<'week' | 'month' | 'day'>('week');
   const hasLoaded = useRef(false);
+  const { startMinutes: businessStartMinutes, endMinutes: businessEndMinutes } =
+    getBusinessHoursBounds(businessHours);
+  const totalMinutes = businessEndMinutes - businessStartMinutes;
+  const columnHeight = totalMinutes * PX_PER_MIN;
+  const timeLabels = buildTimeLabels(businessStartMinutes, businessEndMinutes);
+  const slotLines = buildSlotLines(businessStartMinutes, businessEndMinutes);
 
   // --- Live current-time indicator ---
   const calcNowTopPx = (): number | null => {
     const now = new Date();
-    const mins = (now.getHours() - BUSINESS_START) * 60 + now.getMinutes();
-    if (mins < 0 || mins > TOTAL_MINS) return null;
-    return mins * PX_PER_MIN;
+    const todaysHours = getBusinessHoursForDate(now, businessHours);
+    if (!todaysHours) return null;
+
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    if (
+      nowMinutes < todaysHours.startMinutes ||
+      nowMinutes > todaysHours.endMinutes
+    ) {
+      return null;
+    }
+
+    return (nowMinutes - businessStartMinutes) * PX_PER_MIN;
   };
   const [nowTopPx, setNowTopPx] = useState<number | null>(calcNowTopPx);
   useEffect(() => {
@@ -925,6 +995,7 @@ export function SchedulesCalendar() {
   const filteredWeekAppointments = filterAppts(weekAppointments);
   const filteredMonthAppointments = filterAppts(monthAppointments);
   const filteredDayAppointments = filterAppts(dayAppointments);
+  const dayBusinessHours = getBusinessHoursForDate(dayDate, businessHours);
 
   const byDay: AppointmentRow[][] = [[], [], [], [], [], [], []];
   for (const appt of filteredWeekAppointments) {
@@ -1064,9 +1135,14 @@ export function SchedulesCalendar() {
       {view === 'day' && (
         <DayView
           dayDate={dayDate}
+          isClosed={dayBusinessHours === null}
           appointments={filteredDayAppointments}
           isLoading={dayLoading}
           nowTopPx={isToday(dayDate) ? nowTopPx : null}
+          timeLabels={timeLabels}
+          slotLines={slotLines}
+          columnHeight={columnHeight}
+          businessStartMinutes={businessStartMinutes}
         />
       )}
 
@@ -1120,9 +1196,9 @@ export function SchedulesCalendar() {
               {/* Time labels */}
               <div
                 className="relative border-r select-none"
-                style={{ height: COLUMN_HEIGHT }}
+                style={{ height: columnHeight }}
               >
-                {TIME_LABELS.map(({ label, top }) => (
+                {timeLabels.map(({ label, top }) => (
                   <span
                     key={label}
                     className="absolute right-1 text-[10px] text-muted-foreground leading-none"
@@ -1133,10 +1209,10 @@ export function SchedulesCalendar() {
                 ))}
               </div>
 
-              {/* 30-min grid lines */}
-              {TIME_LABELS.map(({ top }) => (
+              {/* 15-min grid lines */}
+              {slotLines.map(({ key, top }) => (
                 <div
-                  key={top}
+                  key={key}
                   className="absolute left-14 right-0 border-t border-muted/50 pointer-events-none"
                   style={{ top }}
                 />
@@ -1147,7 +1223,7 @@ export function SchedulesCalendar() {
                 <div
                   key={dayIdx}
                   className={`relative border-r last:border-r-0 ${isToday(d) ? 'bg-orange-50/30' : ''}`}
-                  style={{ height: COLUMN_HEIGHT }}
+                  style={{ height: columnHeight }}
                 >
                   {/* Current-time indicator (today's column only) */}
                   {isToday(d) && nowTopPx !== null && (
@@ -1169,7 +1245,9 @@ export function SchedulesCalendar() {
                     byDay[dayIdx].map((appt) => {
                       const start = new Date(appt.start_time);
                       const end = new Date(appt.end_time);
-                      const topPx = minsFromBusinessStart(start) * PX_PER_MIN;
+                      const topPx =
+                        minsFromBusinessStart(start, businessStartMinutes) *
+                        PX_PER_MIN;
                       const durationMins =
                         (end.getTime() - start.getTime()) / 60000;
                       const heightPx = Math.max(durationMins * PX_PER_MIN, 28);

@@ -1,8 +1,15 @@
 import { SchedulesCalendar } from './calendar';
+import {
+  getClinicBusinessHours,
+  getOrderedBusinessHours
+} from '@/lib/clinic-hours';
 
 export const dynamic = 'force-dynamic';
 
 export default function SchedulesPage() {
+  const businessHours = getClinicBusinessHours();
+  const orderedBusinessHours = getOrderedBusinessHours(businessHours);
+
   return (
     <div>
       <div className="mb-6">
@@ -13,7 +20,7 @@ export default function SchedulesPage() {
         </p>
       </div>
 
-      <SchedulesCalendar />
+      <SchedulesCalendar businessHours={businessHours} />
     </div>
   );
 }

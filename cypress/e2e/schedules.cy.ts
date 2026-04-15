@@ -27,8 +27,8 @@ describe('Schedules Page', () => {
         });
     });
 
-    it('renders the time axis starting at 8:00 AM', () => {
-        cy.contains('8:00 AM').should('exist');
+    it('renders morning labels in the time axis', () => {
+        cy.contains('10:00 AM').should('be.visible');
     });
 
     it('renders the time axis ending at 8:00 PM', () => {

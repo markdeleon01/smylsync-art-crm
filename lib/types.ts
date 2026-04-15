@@ -50,5 +50,4 @@ export const APPOINTMENT_DURATIONS: Record<string, number> = {
     'root-canal': 120
 };
 
-export const BUSINESS_HOURS = { start: 8, end: 17 }; // 8 AM – 5 PM
 export const SLOT_MINUTES = 30;

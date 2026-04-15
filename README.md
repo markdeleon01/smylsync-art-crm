@@ -105,6 +105,16 @@ SMTP_PASS=
 SMTP_FROM=            # e.g. noreply@yourdomain.com
 SMTP_FROM_NAME=       # e.g. SMYLSYNC
 
+# Clinic business hours shown in Schedules and used for open-slot generation
+# Format: HH:MM-HH:MM or "closed"
+CLINIC_HOURS_MONDAY=08:00-17:00
+CLINIC_HOURS_TUESDAY=08:00-17:00
+CLINIC_HOURS_WEDNESDAY=08:00-17:00
+CLINIC_HOURS_THURSDAY=08:00-17:00
+CLINIC_HOURS_FRIDAY=08:00-17:00
+CLINIC_HOURS_SATURDAY=08:00-17:00
+CLINIC_HOURS_SUNDAY=08:00-17:00
+
 # Automated reminders (required for the Netlify cron function)
 CRON_SECRET=          # Any strong random string
 URL=                  # Public base URL in production (set automatically by Netlify)
