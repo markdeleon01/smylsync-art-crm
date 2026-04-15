@@ -206,10 +206,10 @@ export default function ArtBot() {
                     className="font-semibold text-sm mb-1"
                     style={{ color: CHATBOT_ORANGE }}
                   >
-                    Hi, I&apos;m ART
+                    Hi, I&apos;m ART!
                   </p>
                   <p className="text-sm text-gray-600">
-                    I am SMYLSYNC&apos;s AI internal operations assistant. I can
+                    I am SMYLSYNC&apos;s internal operations assistant. I can
                     help you manage patients, appointments, schedules, and send
                     email notifications.
                   </p>

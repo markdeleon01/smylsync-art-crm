@@ -162,13 +162,13 @@ describe('ArtBot Component', () => {
   describe('Welcome Message', () => {
     it('should display greeting when chat is open with no messages', () => {
       renderArtBot(true);
-      expect(screen.getByText("Hi, I'm ART")).toBeInTheDocument();
+      expect(screen.getByText("Hi, I'm ART!")).toBeInTheDocument();
     });
 
     it('should display capability description on initial load', () => {
       renderArtBot(true);
       expect(
-        screen.getByText(/SMYLSYNC's AI internal operations assistant/i)
+        screen.getByText(/SMYLSYNC's internal operations assistant/i)
       ).toBeInTheDocument();
     });
 

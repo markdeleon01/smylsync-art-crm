@@ -1,5 +1,9 @@
 import { neon } from '@neondatabase/serverless';
-import { APPOINTMENT_DURATIONS, BUSINESS_HOURS, SLOT_MINUTES } from '@/lib/types';
+import { APPOINTMENT_DURATIONS, SLOT_MINUTES } from '@/lib/types';
+import {
+    getBusinessHoursForDate,
+    getClinicBusinessHours
+} from '@/lib/clinic-hours';
 
 const getDb = () => neon(process.env.POSTGRES_URL!);
 
@@ -194,10 +198,13 @@ export const markReminderSent = async (id: string) => {
 /** Generate every 30-min slot boundary for a calendar day */
 function generateDaySlots(date: Date): Date[] {
     const slots: Date[] = [];
+    const businessHours = getBusinessHoursForDate(date, getClinicBusinessHours());
+    if (!businessHours) return slots;
+
     const current = new Date(date);
-    current.setHours(BUSINESS_HOURS.start, 0, 0, 0);
+    current.setHours(0, businessHours.startMinutes, 0, 0);
     const dayEnd = new Date(date);
-    dayEnd.setHours(BUSINESS_HOURS.end, 0, 0, 0);
+    dayEnd.setHours(0, businessHours.endMinutes, 0, 0);
     while (current < dayEnd) {
         slots.push(new Date(current));
         current.setMinutes(current.getMinutes() + SLOT_MINUTES);
@@ -230,8 +237,11 @@ export const getAvailableSlots = async (
 
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
     const slots = generateDaySlots(dateObj);
+    const businessHours = getBusinessHoursForDate(dateObj, getClinicBusinessHours());
+    if (!businessHours) return [];
+
     const businessEnd = new Date(dateObj);
-    businessEnd.setHours(BUSINESS_HOURS.end, 0, 0, 0);
+    businessEnd.setHours(0, businessHours.endMinutes, 0, 0);
 
     const available: string[] = [];
     for (const slot of slots) {
