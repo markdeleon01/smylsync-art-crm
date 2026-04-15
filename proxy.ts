@@ -5,7 +5,7 @@ const JWT_SECRET = new TextEncoder().encode(
     process.env.JWT_SECRET ?? 'fallback-secret'
 );
 
-const PUBLIC_PATHS = ['/login', '/api/auth', '/api/art', '/api/mcp'];
+const PUBLIC_PATHS = ['/login', '/api/auth', '/api/art', '/api/mcp', '/api/reminders'];
 
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;

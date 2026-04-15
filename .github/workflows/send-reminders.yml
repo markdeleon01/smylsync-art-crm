@@ -1,0 +1,42 @@
+name: Send Appointment Reminders
+
+on:
+  schedule:
+    # Run every hour at :00
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allow manual triggering for testing
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send reminders
+        run: |
+          # Replace with your actual deployed URL
+          URL="${{ secrets.SITE_URL }}"
+          CRON_SECRET="${{ secrets.CRON_SECRET }}"
+
+          if [ -z "$URL" ]; then
+            echo "SITE_URL secret is not set"
+            exit 1
+          fi
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET secret is not set"
+            exit 1
+          fi
+
+          echo "Sending reminders..."
+          response=$(curl -s -w "%{http_code}" -o response.json \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$URL/api/reminders")
+
+          if [ "$response" -eq 200 ]; then
+            echo "Reminders sent successfully"
+            cat response.json
+          else
+            echo "Failed to send reminders. HTTP status: $response"
+            cat response.json
+            exit 1
+          fi
