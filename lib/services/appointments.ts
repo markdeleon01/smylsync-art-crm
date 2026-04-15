@@ -221,7 +221,10 @@ export const getAvailableSlots = async (
     appointmentType = 'checkup'
 ) => {
     const sql = getDb();
-    const dateObj = new Date(date);
+    // Parse "YYYY-MM-DD" as LOCAL midnight so day-of-week and business-hours
+    // checks are always correct regardless of server timezone.
+    const [y, m, d] = date.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d); // local midnight
     const dayStart = new Date(dateObj);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(dateObj);
