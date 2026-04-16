@@ -3,7 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { NextRequest } from "next/server";
 
-export const maxDuration = 60; // seconds — prevents 504 on Netlify/Vercel (default is 10s)
+export const maxDuration = 120; // seconds — prevents 504 on Netlify/Vercel (default is 10s)
 
 import { getAllPatients, getPatientById, updatePatientFirstName, updatePatientLastName, updatePatientEmail, updatePatientPhone, getPatientsByFirstName, getPatientsByLastName, getPatientByEmail, createPatient, deletePatientById, deletePatientByLastName, deletePatientByFirstName, deletePatientByEmail } from "@/lib/services/patients";
 import { getAllAppointments, getAppointmentById, getAppointmentsByPatientId, getAppointmentsOnDate, bookAppointment, rebookAppointment, cancelAppointment, completeAppointment, getAvailableSlots, autofillSchedule, markReminderSent } from "@/lib/services/appointments";
