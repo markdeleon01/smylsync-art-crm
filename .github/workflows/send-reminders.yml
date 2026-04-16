@@ -28,7 +28,13 @@ jobs:
           fi
 
           echo "Sending reminders..."
-          response=$(curl -s -w "%{http_code}" -o response.json \
+          response=$(curl --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-connrefused \
+            -L -w "%{http_code}" -o response.json \
             -H "Authorization: Bearer $CRON_SECRET" \
             "$URL/api/reminders")
 
