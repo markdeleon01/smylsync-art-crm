@@ -4,7 +4,7 @@ import { streamText, stepCountIs } from 'ai';
 //import { openai } from '@ai-sdk/openai';
 import { createOpenAI } from '@ai-sdk/openai';
 
-export const maxDuration = 60; // seconds — prevents 504 on Netlify/Vercel (default is 10s)
+export const maxDuration = 120; // seconds — prevents 504 on Netlify/Vercel (default is 10s)
 
 // Optional: Official transports if you prefer them
 // import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio';
