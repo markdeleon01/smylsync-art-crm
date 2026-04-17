@@ -635,21 +635,17 @@ export function createMcpServer() {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
         },
         async ({ id }: { id: string }) => {
-            try {
-                const appt = await getAppointmentById(id);
-                if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
-                if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
-                await sendBookingConfirmation(
-                    appt as Appointment,
-                    appt.firstname as string,
-                    appt.lastname as string,
-                    appt.email as string
-                );
-                return { content: [{ type: "text", text: `Booking confirmation sent to ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
-            } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err);
-                return { content: [{ type: "text", text: `Failed to send booking confirmation: ${msg}` }], isError: true };
-            }
+            const appt = await getAppointmentById(id);
+            if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
+            if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
+            // Fire-and-forget: email delivery is best-effort so it never blocks the streaming response.
+            sendBookingConfirmation(
+                appt as Appointment,
+                appt.firstname as string,
+                appt.lastname as string,
+                appt.email as string
+            ).catch(err => console.error('[email] booking confirmation failed:', err));
+            return { content: [{ type: "text", text: `Booking confirmation queued for ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
         }
     );
 
@@ -666,13 +662,14 @@ export function createMcpServer() {
                 const appt = await getAppointmentById(id);
                 if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
                 if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
-                await sendReschedulingNotification(
+                // Fire-and-forget: email delivery is best-effort so it never blocks the streaming response.
+                sendReschedulingNotification(
                     appt as Appointment,
                     appt.firstname as string,
                     appt.lastname as string,
                     appt.email as string
-                );
-                return { content: [{ type: "text", text: `Rescheduling notification sent to ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
+                ).catch(err => console.error('[email] rescheduling notification failed:', err));
+                return { content: [{ type: "text", text: `Rescheduling notification queued for ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 return { content: [{ type: "text", text: `Failed to send rescheduling notification: ${msg}` }], isError: true };
@@ -693,13 +690,14 @@ export function createMcpServer() {
                 const appt = await getAppointmentById(id);
                 if (!appt) return { content: [{ type: "text", text: `Appointment '${id}' not found.` }], isError: true };
                 if (!appt.email) return { content: [{ type: "text", text: `No email address on file for the patient linked to appointment '${id}'.` }], isError: true };
-                await sendCancellationNotice(
+                // Fire-and-forget: email delivery is best-effort so it never blocks the streaming response.
+                sendCancellationNotice(
                     appt as Appointment,
                     appt.firstname as string,
                     appt.lastname as string,
                     appt.email as string
-                );
-                return { content: [{ type: "text", text: `Cancellation notice sent to ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
+                ).catch(err => console.error('[email] cancellation notice failed:', err));
+                return { content: [{ type: "text", text: `Cancellation notice queued for ${appt.firstname} ${appt.lastname} (${appt.email}).` }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 return { content: [{ type: "text", text: `Failed to send cancellation notice: ${msg}` }], isError: true };
