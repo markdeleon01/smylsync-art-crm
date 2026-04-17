@@ -46,12 +46,12 @@ export async function POST(req: NextRequest) {
         }
 
         const appointment = await bookAppointment(patient_id, start_time, appointment_type, notes);
-        void sendBookingConfirmation(
+        sendBookingConfirmation(
             appointment as Appointment,
             patient.firstname as string,
             patient.lastname as string,
             patient.email as string
-        );
+        ).catch(err => console.error('[email] Booking confirmation failed:', err));
         return Response.json(appointment, { status: 201 });
     } catch (err) {
         console.error('POST /api/appointments error:', err);
