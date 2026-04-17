@@ -1,15 +1,10 @@
 import { createMCPClient } from '@ai-sdk/mcp';
 import { streamText, stepCountIs } from 'ai';
-//import { Experimental_StdioMCPTransport } from '@ai-sdk/mcp/mcp-stdio';
-//import { openai } from '@ai-sdk/openai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { createMcpServer } from '@/lib/mcp-server';
 
-export const maxDuration = 120; // seconds — prevents 504 on Netlify/Vercel (default is 10s)
-
-// Optional: Official transports if you prefer them
-// import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio';
-// import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse';
-// import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp';
+export const maxDuration = 120; // seconds — Vercel only; Netlify timeout is set in netlify.toml
 
 export async function POST(req: Request) {
     const { message, history = [], localDate }: { message: string; history: { role: 'user' | 'assistant'; content: string }[]; localDate?: string } = await req.json();
@@ -19,73 +14,22 @@ export async function POST(req: Request) {
         return Response.json({ error: 'Server configuration error.' }, { status: 500 });
     }
 
-    // Derive the MCP URL from the incoming request so it works in any environment
-    // (local, Vercel, Netlify, etc.) without needing MCP_URL set.
-    const { origin } = new URL(req.url);
-    const mcpUrl = process.env.MCP_URL ?? `${origin}/api/mcp`;
-
     const openai = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY
     });
 
     try {
-        /*
-        // Initialize an MCP client to connect to a `stdio` MCP server (local only):
-        const transport = new Experimental_StdioMCPTransport({
-            command: 'node',
-            args: ['src/stdio/dist/server.js'],
+        // Use an in-process MCP transport so tool calls never leave the serverless function.
+        // This eliminates the HTTP round-trips to /api/mcp that caused 504 timeouts on Netlify.
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        const mcpServer = createMcpServer();
+        await mcpServer.connect(serverTransport);
+
+        const mcpClient = await createMCPClient({
+            transport: clientTransport,
         });
 
-        const stdioClient = await createMCPClient({
-            transport,
-        });
-        */
-
-        // Connect to an HTTP MCP server directly via the client transport config
-        const httpClient = await createMCPClient({
-            transport: {
-                type: 'http',
-                url: mcpUrl,
-
-                // optional: configure headers
-                // headers: { Authorization: 'Bearer my-api-key' },
-
-                // optional: provide an OAuth client provider for automatic authorization
-                // authProvider: myOAuthClientProvider,
-            },
-        });
-
-        /*
-        // Connect to a Server-Sent Events (SSE) MCP server directly via the client transport config
-        const sseClient = await createMCPClient({
-            transport: {
-                type: 'sse',
-                url: process.env.SSE_URL ?? '/api/sse',
-
-                // optional: configure headers
-                // headers: { Authorization: 'Bearer my-api-key' },
-
-                // optional: provide an OAuth client provider for automatic authorization
-                // authProvider: myOAuthClientProvider,
-            },
-        });
-        */
-
-        // Alternatively, you can create transports with the official SDKs instead of direct config:
-        // const httpTransport = new StreamableHTTPClientTransport(new URL('http://localhost:3000/mcp'));
-        // const httpClient = await createMCPClient({ transport: httpTransport });
-        // const sseTransport = new SSEClientTransport(new URL('http://localhost:3000/sse'));
-        // const sseClient = await createMCPClient({ transport: sseTransport });
-
-        //const toolSetOne = await stdioClient.tools();
-        const toolSetTwo = await httpClient.tools();
-        //const toolSetThree = await sseClient.tools();
-        const tools = {
-            //...toolSetOne,
-            ...toolSetTwo,
-            //...toolSetThree, // note: this approach causes subsequent tool sets to override tools with the same name
-        };
-        //console.log('Available tools:', Object.keys(tools));
+        const tools = await mcpClient.tools();
 
         const systemPrompt = `Your name is ART, SMYLSYNC's internal operations agent capable of running tools. Use the available tools to answer questions and perform operations.
         You can ONLY answer questions about patients, appointments, and schedules by calling the available tools — never from your training knowledge. If a tool must be used to answer a question, always call it.
@@ -127,10 +71,10 @@ export async function POST(req: Request) {
                 }
             },
             onFinish: async () => {
-                await httpClient.close();
+                await mcpClient.close();
             },
             onError: async error => {
-                await httpClient.close();
+                await mcpClient.close();
             },
         });
 

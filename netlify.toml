@@ -4,6 +4,12 @@
 
 [functions]
   directory = "netlify/functions"
+  # maxDuration = 120 in Next.js route files is Vercel-only; set the Netlify
+  # function timeout here instead (26s is the maximum for synchronous functions).
+  node_bundler = "esbuild"
+
+[functions."___netlify-server-handler"]
+  timeout = 26
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
