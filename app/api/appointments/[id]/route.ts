@@ -31,12 +31,12 @@ export async function DELETE(
             return Response.json({ error: `Appointment '${id}' not found` }, { status: 404 });
         }
         const cancelled = await cancelAppointment(id);
-        void sendCancellationNotice(
+        sendCancellationNotice(
             appointment as Appointment,
             appointment.firstname as string,
             appointment.lastname as string,
             appointment.email as string
-        );
+        ).catch(err => console.error('[email] Cancellation notice failed:', err));
         return Response.json(cancelled);
     } catch (err) {
         console.error(`DELETE /api/appointments/${id} error:`, err);
