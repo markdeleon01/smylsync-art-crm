@@ -408,7 +408,7 @@ describe('MCP tool – send_booking_confirmation', () => {
         mockGetAppointmentById.mockResolvedValue(APPT);
         mockSendBookingConfirmation.mockResolvedValue(undefined);
         const result = await callTool('send_booking_confirmation', { id: 'appt-1' }) as any;
-        expect(result.content[0].text).toContain('Booking confirmation sent');
+        expect(result.content[0].text).toContain('Booking confirmation queued');
         expect(result.content[0].text).toContain('jane@example.com');
         expect(mockSendBookingConfirmation).toHaveBeenCalledOnce();
     });
@@ -427,12 +427,14 @@ describe('MCP tool – send_booking_confirmation', () => {
         expect(mockSendBookingConfirmation).not.toHaveBeenCalled();
     });
 
-    it('returns isError when sendBookingConfirmation throws', async () => {
+    it('queues email fire-and-forget even when sendBookingConfirmation rejects', async () => {
         mockGetAppointmentById.mockResolvedValue(APPT);
         mockSendBookingConfirmation.mockRejectedValue(new Error('SMTP failure'));
         const result = await callTool('send_booking_confirmation', { id: 'appt-1' }) as any;
-        expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('SMTP failure');
+        // Fire-and-forget: SMTP errors are swallowed; the tool still returns success.
+        expect(result.isError).toBeUndefined();
+        expect(result.content[0].text).toContain('Booking confirmation queued');
+        expect(mockSendBookingConfirmation).toHaveBeenCalledOnce();
     });
 });
 
@@ -443,7 +445,7 @@ describe('MCP tool – send_rescheduling_notification', () => {
         mockGetAppointmentById.mockResolvedValue(APPT);
         mockSendReschedulingNotification.mockResolvedValue(undefined);
         const result = await callTool('send_rescheduling_notification', { id: 'appt-1' }) as any;
-        expect(result.content[0].text).toContain('Rescheduling notification sent');
+        expect(result.content[0].text).toContain('Rescheduling notification queued');
         expect(result.content[0].text).toContain('jane@example.com');
         expect(mockSendReschedulingNotification).toHaveBeenCalledOnce();
     });
@@ -455,12 +457,14 @@ describe('MCP tool – send_rescheduling_notification', () => {
         expect(mockSendReschedulingNotification).not.toHaveBeenCalled();
     });
 
-    it('returns isError when sendReschedulingNotification throws', async () => {
+    it('queues email fire-and-forget even when sendReschedulingNotification rejects', async () => {
         mockGetAppointmentById.mockResolvedValue(APPT);
         mockSendReschedulingNotification.mockRejectedValue(new Error('SMTP failure'));
         const result = await callTool('send_rescheduling_notification', { id: 'appt-1' }) as any;
-        expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('SMTP failure');
+        // Fire-and-forget: SMTP errors are swallowed; the tool still returns success.
+        expect(result.isError).toBeUndefined();
+        expect(result.content[0].text).toContain('Rescheduling notification queued');
+        expect(mockSendReschedulingNotification).toHaveBeenCalledOnce();
     });
 });
 
@@ -471,7 +475,7 @@ describe('MCP tool – send_cancellation_notice', () => {
         mockGetAppointmentById.mockResolvedValue(APPT);
         mockSendCancellationNotice.mockResolvedValue(undefined);
         const result = await callTool('send_cancellation_notice', { id: 'appt-1' }) as any;
-        expect(result.content[0].text).toContain('Cancellation notice sent');
+        expect(result.content[0].text).toContain('Cancellation notice queued');
         expect(result.content[0].text).toContain('jane@example.com');
         expect(mockSendCancellationNotice).toHaveBeenCalledOnce();
     });
@@ -483,12 +487,14 @@ describe('MCP tool – send_cancellation_notice', () => {
         expect(mockSendCancellationNotice).not.toHaveBeenCalled();
     });
 
-    it('returns isError when sendCancellationNotice throws', async () => {
+    it('queues email fire-and-forget even when sendCancellationNotice rejects', async () => {
         mockGetAppointmentById.mockResolvedValue(APPT);
         mockSendCancellationNotice.mockRejectedValue(new Error('SMTP failure'));
         const result = await callTool('send_cancellation_notice', { id: 'appt-1' }) as any;
-        expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('SMTP failure');
+        // Fire-and-forget: SMTP errors are swallowed; the tool still returns success.
+        expect(result.isError).toBeUndefined();
+        expect(result.content[0].text).toContain('Cancellation notice queued');
+        expect(mockSendCancellationNotice).toHaveBeenCalledOnce();
     });
 });
 
