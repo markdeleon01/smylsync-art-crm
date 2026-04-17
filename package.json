@@ -11,7 +11,7 @@
     "seed:users:ci": "tsx scripts/seed-users.ts users.csv",
     "seed:patients": "tsx --env-file=.env scripts/seed-patients.ts patients.csv",
     "seed:patients:ci": "tsx scripts/seed-patients.ts patients.csv",
-    "deploy": "npm run migrate:ci && npm run seed:users:ci && npm run seed:patients:ci",
+    "deploy": "pnpm run migrate:ci && pnpm run seed:users:ci && pnpm run seed:patients:ci",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
