@@ -52,6 +52,8 @@ beforeEach(() => {
     vi.clearAllMocks();
     // Default: POSTGRES_URL must be defined (neon() is already mocked)
     process.env.POSTGRES_URL = 'postgresql://mock';
+    // Pin to UTC so slot timestamps equal wall-clock times regardless of machine timezone
+    process.env.CLINIC_TIMEZONE = 'UTC';
     delete process.env.CLINIC_HOURS_MONDAY;
     delete process.env.CLINIC_HOURS_TUESDAY;
     delete process.env.CLINIC_HOURS_WEDNESDAY;
@@ -357,10 +359,9 @@ describe('getAvailableSlots', () => {
     });
 
     it('removes slots that conflict with an existing appointment', async () => {
-        // A 60-min appointment at 09:00 local time blocks the 09:00 and 09:30 slots.
-        // Use setHours() (local time) to match what generateDaySlots produces.
-        const apptStart = new Date('2026-05-05');
-        apptStart.setHours(9, 0, 0, 0);
+        // A 60-min appointment at 09:00 UTC blocks the 09:00 and 09:30 slots.
+        // Use Date.UTC to construct machine-independent UTC timestamps.
+        const apptStart = new Date(Date.UTC(2026, 4, 5, 9, 0, 0, 0));
         const apptEnd = new Date(apptStart.getTime() + 60 * 60 * 1000);
         mockSql.mockResolvedValueOnce([
             { start_time: apptStart.toISOString(), end_time: apptEnd.toISOString() }
@@ -371,12 +372,11 @@ describe('getAvailableSlots', () => {
     });
 
     it('returns empty array when the day is fully booked', async () => {
-        // Fill every 30-min slot from 08:00–20:00 using local time (same as generateDaySlots)
+        // Fill every 30-min slot from 08:00–20:00 UTC (matches CLINIC_TIMEZONE=UTC slot times)
         const existing = Array.from({ length: 24 }, (_, i) => {
             const startH = 8 + Math.floor(i / 2);
             const startM = (i % 2) * 30;
-            const start = new Date('2026-05-05');
-            start.setHours(startH, startM, 0, 0);
+            const start = new Date(Date.UTC(2026, 4, 5, startH, startM, 0, 0));
             const end = new Date(start.getTime() + 30 * 60000);
             return { start_time: start.toISOString(), end_time: end.toISOString() };
         });

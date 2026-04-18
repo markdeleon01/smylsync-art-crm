@@ -195,19 +195,45 @@ export const markReminderSent = async (id: string) => {
 // Availability helpers
 // ---------------------------------------------------------------------------
 
-/** Generate every 30-min slot boundary for a calendar day */
-function generateDaySlots(date: Date): Date[] {
-    const slots: Date[] = [];
-    const businessHours = getBusinessHoursForDate(date, getClinicBusinessHours());
-    if (!businessHours) return slots;
+/**
+ * Converts a wall-clock time (minutes since midnight) on a calendar date to a UTC
+ * Date, interpreting the wall clock in the clinic's configured timezone.
+ * Works correctly for fixed-offset zones (e.g. Asia/Manila UTC+8) and DST zones.
+ */
+function wallClockToUTC(dateStr: string, wallMinutes: number): Date {
+    const tz = process.env.CLINIC_TIMEZONE ?? 'UTC';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const h = Math.floor(wallMinutes / 60);
+    const min = wallMinutes % 60;
+    // Naively treat wall-clock as UTC, then correct using the Intl offset
+    const guess = new Date(Date.UTC(y, m - 1, d, h, min, 0, 0));
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+        hour12: false
+    }).formatToParts(guess);
+    const get = (type: string) => {
+        const v = parts.find((p) => p.type === type)?.value ?? '0';
+        return parseInt(v === '24' ? '0' : v, 10);
+    };
+    const clinicMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+    return new Date(guess.getTime() - (clinicMs - guess.getTime()));
+}
 
-    const current = new Date(date);
-    current.setHours(0, businessHours.startMinutes, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(0, businessHours.endMinutes, 0, 0);
+/** Generate every 30-min slot boundary for a calendar day in the clinic's timezone */
+function generateDaySlots(dateStr: string): Date[] {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateForDow = new Date(y, m - 1, d);
+    const businessHours = getBusinessHoursForDate(dateForDow, getClinicBusinessHours());
+    if (!businessHours) return [];
+
+    const slots: Date[] = [];
+    const current = wallClockToUTC(dateStr, businessHours.startMinutes);
+    const dayEnd = wallClockToUTC(dateStr, businessHours.endMinutes);
     while (current < dayEnd) {
         slots.push(new Date(current));
-        current.setMinutes(current.getMinutes() + SLOT_MINUTES);
+        current.setUTCMinutes(current.getUTCMinutes() + SLOT_MINUTES);
     }
     return slots;
 }
@@ -221,14 +247,12 @@ export const getAvailableSlots = async (
     appointmentType = 'checkup'
 ) => {
     const sql = getDb();
-    // Parse "YYYY-MM-DD" as LOCAL midnight so day-of-week and business-hours
-    // checks are always correct regardless of server timezone.
+    // Build day-of-week reference from calendar components
     const [y, m, d] = date.split('-').map(Number);
-    const dateObj = new Date(y, m - 1, d); // local midnight
-    const dayStart = new Date(dateObj);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dateObj);
-    dayEnd.setHours(23, 59, 59, 999);
+    const dateForDow = new Date(y, m - 1, d);
+    // Query the full clinic calendar day in the configured timezone
+    const dayStart = wallClockToUTC(date, 0);
+    const dayEnd = wallClockToUTC(date, 24 * 60);
 
     const existing = await sql`
         SELECT start_time, end_time
@@ -239,12 +263,11 @@ export const getAvailableSlots = async (
     `;
 
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    const slots = generateDaySlots(dateObj);
-    const businessHours = getBusinessHoursForDate(dateObj, getClinicBusinessHours());
+    const slots = generateDaySlots(date);
+    const businessHours = getBusinessHoursForDate(dateForDow, getClinicBusinessHours());
     if (!businessHours) return [];
 
-    const businessEnd = new Date(dateObj);
-    businessEnd.setHours(0, businessHours.endMinutes, 0, 0);
+    const businessEnd = wallClockToUTC(date, businessHours.endMinutes);
 
     const available: string[] = [];
     for (const slot of slots) {
