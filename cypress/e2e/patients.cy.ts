@@ -53,6 +53,7 @@ describe('Patients Page', () => {
     });
 
     it('shows patient email on each card', () => {
+        cy.get('[aria-label="Show patients in grid view"]').click();
         cy.request('GET', '/api/patients').then((res) => {
             if (res.body.length > 0) {
                 const patient = res.body[0];
@@ -242,6 +243,7 @@ describe('Patients Page – search', () => {
     });
 
     it('filtering by partial phone number shows matching patients', () => {
+        cy.get('[aria-label="Show patients in grid view"]').click();
         cy.request('GET', '/api/patients').then((res) => {
             const withPhone = res.body.find((p: any) => p.phone);
             if (!withPhone) return;
@@ -339,6 +341,7 @@ describe('Patients Page – card content', () => {
     });
 
     it('displays phone number on cards where phone is available', () => {
+        cy.get('[aria-label="Show patients in grid view"]').click();
         cy.request('GET', '/api/patients').then((res) => {
             const withPhone = res.body.find((p: any) => p.phone);
             if (!withPhone) return;
