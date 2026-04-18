@@ -52,6 +52,7 @@ function parseCsv(filePath: string): PatientRow[] {
 }
 
 async function main() {
+    console.log('Using POSTGRES_URL:', process.env.POSTGRES_URL);
     const sql = neon(process.env.POSTGRES_URL!);
 
     console.log(`Reading patients from: ${csvPath}`);

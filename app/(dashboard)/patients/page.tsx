@@ -10,10 +10,7 @@ export default async function PatientsPage() {
   let appointments: ApptRow[] = [];
 
   try {
-    const [rawPatients, rawAppts] = await Promise.all([
-      getAllPatients(),
-      getUpcomingScheduledAppointments()
-    ]);
+    const rawPatients = await getAllPatients();
     patients = rawPatients.map((p) => ({
       id: p.id as string,
       firstname: p.firstname as string,
@@ -21,6 +18,13 @@ export default async function PatientsPage() {
       email: p.email as string,
       phone: (p.phone as string | null) ?? null
     }));
+  } catch (err) {
+    console.error('[PatientsPage] Failed to fetch patients:', err);
+    patients = [];
+  }
+
+  try {
+    const rawAppts = await getUpcomingScheduledAppointments();
     appointments = rawAppts.map((a) => ({
       id: a.id as string,
       patient_id: a.patient_id as string,
@@ -30,8 +34,8 @@ export default async function PatientsPage() {
       status: a.status as string,
       notes: (a.notes as string | null) ?? null
     }));
-  } catch {
-    patients = [];
+  } catch (err) {
+    console.error('[PatientsPage] Failed to fetch appointments:', err);
     appointments = [];
   }
 
