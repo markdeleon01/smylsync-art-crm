@@ -757,9 +757,7 @@ interface SchedulesCalendarProps {
   businessHours: ClinicBusinessHours;
 }
 
-export function SchedulesCalendar({
-  businessHours
-}: SchedulesCalendarProps) {
+export function SchedulesCalendar({ businessHours }: SchedulesCalendarProps) {
   const [view, setView] = useState<'week' | 'month' | 'day'>('week');
   const hasLoaded = useRef(false);
   const { startMinutes: businessStartMinutes, endMinutes: businessEndMinutes } =
@@ -836,7 +834,7 @@ export function SchedulesCalendar({
   const fetchWeek = useCallback(async (sunday: Date) => {
     setWeekLoading(true);
     try {
-      const data = await getWeekAppointments(sunday.toISOString());
+      const data = await getWeekAppointments(sunday.toLocaleDateString('sv'));
       setWeekAppointments(data as AppointmentRow[]);
     } catch {
       setWeekAppointments([]);
@@ -852,7 +850,7 @@ export function SchedulesCalendar({
   const fetchMonth = useCallback(async (start: Date) => {
     setMonthLoading(true);
     try {
-      const data = await getMonthAppointments(start.toISOString());
+      const data = await getMonthAppointments(start.toLocaleDateString('sv'));
       setMonthAppointments(data as AppointmentRow[]);
     } catch {
       setMonthAppointments([]);
@@ -864,7 +862,7 @@ export function SchedulesCalendar({
   const fetchDay = useCallback(async (date: Date) => {
     setDayLoading(true);
     try {
-      const data = await getDayAppointments(date.toISOString());
+      const data = await getDayAppointments(date.toLocaleDateString('sv'));
       setDayAppointments(data as AppointmentRow[]);
     } catch {
       setDayAppointments([]);
