@@ -3,6 +3,8 @@ import { getAllPatients } from '@/lib/services/patients';
 import { getUpcomingScheduledAppointments } from '@/lib/services/appointments';
 import { PatientsList, type PatientRow, type ApptRow } from './patients-list';
 
+export const dynamic = 'force-dynamic';
+
 export default async function PatientsPage() {
   let patients: PatientRow[] = [];
   let appointments: ApptRow[] = [];
