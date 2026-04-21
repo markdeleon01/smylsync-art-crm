@@ -270,7 +270,7 @@ describe('MCP tool – book_appointment', () => {
 
         expect(result.content[0].text).toContain('Appointment booked successfully');
         expect(result.content[0].text).toContain('appt-1');
-        expect(mockSendBookingConfirmation).not.toHaveBeenCalled();
+        expect(mockSendBookingConfirmation).toHaveBeenCalled();
     });
 
     it('returns error text when patient does not exist', async () => {
