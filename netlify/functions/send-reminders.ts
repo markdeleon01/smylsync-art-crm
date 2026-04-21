@@ -1,34 +1,51 @@
+
 import type { Config } from '@netlify/functions';
+import { getAppointmentsDueForReminder, markReminderSent } from '../../lib/services/appointments';
+import { sendReminderEmail } from '../../lib/services/email';
+import type { Appointment } from '../../lib/types';
 
-// Runs every hour at :00. Calls the Next.js /api/reminders endpoint so that
-// patients with appointments starting in 23–25 hours receive a reminder email.
-export default async () => {
-    const baseUrl = process.env.URL;
-    if (!baseUrl) {
-        console.error('[send-reminders] BASE_URL not set — cannot call /api/reminders');
-        return;
-    }
+const secret = process.env.CRON_SECRET;
 
-    const secret = process.env.CRON_SECRET;
+const handler = async () => {
     if (!secret) {
-        console.error('[send-reminders] CRON_SECRET not set — aborting');
-        return;
+        console.error('[send-reminders] CRON_SECRET not set');
+        return { statusCode: 500, body: 'Server configuration error.' };
     }
 
-    const url = `${baseUrl}/api/reminders`;
-    const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${secret}` },
-    });
+    try {
+        const appointments = await getAppointmentsDueForReminder();
+        let sent = 0;
+        let skipped = 0;
 
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`[send-reminders] /api/reminders returned ${res.status}: ${text}`);
-        return;
+        for (const appt of appointments) {
+            const email = appt.email as string | undefined;
+            if (!email) {
+                skipped++;
+                continue;
+            }
+            await sendReminderEmail(
+                appt as Appointment,
+                appt.firstname as string,
+                appt.lastname as string,
+                email
+            );
+            await markReminderSent(appt.id as string);
+            sent++;
+        }
+
+        console.log(`[send-reminders] Processed ${appointments.length} due: ${sent} sent, ${skipped} skipped`);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ sent, skipped }),
+            headers: { 'Content-Type': 'application/json' }
+        };
+    } catch (err) {
+        console.error('[send-reminders] Error processing reminders:', err);
+        return { statusCode: 500, body: 'Failed to process reminders' };
     }
-
-    const data = await res.json();
-    console.log(`[send-reminders] Done — sent: ${data.sent}, skipped: ${data.skipped}`);
 };
+
+export { handler };
 
 export const config: Config = {
     schedule: '0 * * * *', // every hour on the hour
