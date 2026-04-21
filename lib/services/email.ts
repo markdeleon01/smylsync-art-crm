@@ -64,7 +64,11 @@ export async function sendBookingConfirmation(
         });
     } catch (err) {
         console.error('[email] Failed to send booking confirmation:', err);
-        throw err; // Re-throw to allow upstream handling if needed
+        if (process.env.NODE_ENV !== 'production') {
+            // Log full error details in non-prod
+            console.error('[email] Booking confirmation error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+        }
+        throw new Error('[email] Booking confirmation failed: ' + (err instanceof Error ? err.message : String(err)));
     }
 }
 

@@ -522,7 +522,27 @@ export function createMcpServer() {
                     };
                 }
 
-                const appt = await bookAppointment(patient_id, start_time, appointment_type, notes);
+                let appt;
+                try {
+                    appt = await bookAppointment(patient_id, start_time, appointment_type, notes);
+                } catch (err) {
+                    console.error('[mcp-server] bookAppointment error:', err);
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.error('[mcp-server] bookAppointment error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+                    }
+                    return { content: [{ type: "text", text: `Failed to book appointment (DB): ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+                }
+
+                try {
+                    await sendBookingConfirmation(appt, patient.firstname, patient.lastname, patient.email);
+                } catch (err) {
+                    console.error('[mcp-server] sendBookingConfirmation error:', err);
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.error('[mcp-server] sendBookingConfirmation error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+                    }
+                    return { content: [{ type: "text", text: `Appointment booked, but failed to send confirmation email: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+                }
+
                 const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${appt.start_time}\nEnd: ${appt.end_time}\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
