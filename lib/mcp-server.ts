@@ -522,9 +522,10 @@ export function createMcpServer() {
                     };
                 }
 
-                let appt;
+
+                let appt: Appointment;
                 try {
-                    appt = await bookAppointment(patient_id, start_time, appointment_type, notes);
+                    appt = await bookAppointment(patient_id, start_time, appointment_type, notes) as Appointment;
                 } catch (err) {
                     console.error('[mcp-server] bookAppointment error:', err);
                     if (process.env.NODE_ENV !== 'production') {
