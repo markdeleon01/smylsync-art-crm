@@ -35,10 +35,11 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 - MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — stateless HTTP transport, 28 registered tools
 - Analytics - [Vercel Analytics](https://vercel.com/analytics)
 
+
 **Email:**
 
 - [Nodemailer](https://nodemailer.com) over SMTP — booking confirmations, rescheduling notices, cancellation notices, and 24-hour reminder emails
-- Automated reminders via GitHub Actions cron job running every hour
+- Automated reminders via a Netlify [Scheduled Function](https://docs.netlify.com/functions/scheduled-functions/) (`send-reminders.ts`) that runs every hour on the hour
 
 **Testing & Quality:**
 
