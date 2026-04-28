@@ -294,9 +294,23 @@ export const getAvailableSlots = async (
 
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
     const slots = generateDaySlots(date);
+    // Get business hours for the date
+    const [y, m, d] = date.split('-').map(Number);
+    const dateForDow = new Date(y, m - 1, d);
+    const businessHours = getBusinessHoursForDate(dateForDow, getClinicBusinessHours());
+    if (!businessHours) return [];
+    const dayEndMinutes = businessHours.endMinutes;
+
     const available: string[] = [];
     for (const slot of slots) {
         // slot is wall time string 'YYYY-MM-DDTHH:mm:ss'
+        const [_, timePart] = slot.split('T');
+        const [h, min] = timePart.split(':').map(Number);
+        const slotStartMinutes = h * 60 + min;
+        const slotEndMinutes = slotStartMinutes + durationMins;
+        // Only allow slots that fit entirely within business hours
+        if (slotEndMinutes > dayEndMinutes) continue;
+
         const slotStart = new Date(slot);
         const slotEnd = new Date(slotStart.getTime() + durationMins * 60 * 1000);
 
