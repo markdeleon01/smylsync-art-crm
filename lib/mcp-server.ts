@@ -560,7 +560,19 @@ export function createMcpServer() {
                     return { content: [{ type: "text", text: `Appointment booked, but failed to send confirmation email: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
                 }
 
-                const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${appt.start_time}\nEnd: ${appt.end_time}\nStatus: ${appt.status}`;
+                // Format start and end time in clinic timezone for confirmation
+                const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+                const formatWallTime = (iso: string) => {
+                    const d = new Date(iso);
+                    return new Intl.DateTimeFormat('en-US', {
+                        timeZone: tz,
+                        year: 'numeric', month: 'short', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', hour12: false
+                    }).format(d);
+                };
+                const startWall = formatWallTime(appt.start_time);
+                const endWall = formatWallTime(appt.end_time);
+                const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${startWall} (${tz})\nEnd: ${endWall} (${tz})\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
