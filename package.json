@@ -44,6 +44,7 @@
     "drizzle-zod": "^0.5.1",
     "jose": "^6.2.2",
     "lucide-react": "^0.400.0",
+    "marked": "^18.0.2",
     "mcp-handler": "^1.0.7",
     "next": "^16.2.2",
     "nodemailer": "^8.0.5",

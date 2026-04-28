@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import React from 'react';
+// Add a lightweight markdown parser (marked)
+import { marked } from 'marked';
 import { useChat, type Message } from '@/lib/hooks/useChat';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useChatSidebar } from '@/lib/chat-context';
@@ -257,9 +260,18 @@ export default function ArtBot() {
                             : { backgroundColor: '#f3f4f6', color: '#111827' }
                         }
                       >
-                        <p className="whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+                        {message.role === 'assistant' ? (
+                          <div
+                            className="whitespace-pre-wrap break-words"
+                            dangerouslySetInnerHTML={{
+                              __html: marked.parse(message.content)
+                            }}
+                          />
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {message.role === 'assistant' &&
