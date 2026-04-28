@@ -64,7 +64,8 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
   });
 }
 
@@ -72,7 +73,8 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: 'Asia/Manila'
   });
 }
 
