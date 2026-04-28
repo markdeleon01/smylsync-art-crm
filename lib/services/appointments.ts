@@ -91,12 +91,42 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    const start = new Date(startTime);
-    const end = new Date(start.getTime() + durationMins * 60 * 1000);
+    // Store startTime as wall time (no timezone conversion)
+    // Accepts 'YYYY-MM-DDTHH:mm' or ISO string, but always stores as local wall time
+    let startWall: string;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(startTime)) {
+        // Already wall time string
+        startWall = startTime + ':00'; // add seconds for SQL timestamp
+    } else if (/Z$|[+-]\d{2}:?\d{2}$/.test(startTime)) {
+        // ISO string with Z or offset: convert to clinic wall time
+        const d = new Date(startTime);
+        const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour12: false
+        }).formatToParts(d);
+        const get = (type: string) => parts.find((p) => p.type === type)?.value;
+        startWall = `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+    } else {
+        // ISO string without offset: treat as wall time
+        startWall = startTime.length === 16 ? startTime + ':00' : startTime;
+    }
+    // Calculate end time as wall time string
+    const [datePart, timePart] = startWall.split('T');
+    const [h, m, s] = timePart.split(':').map(Number);
+    const endDate = new Date(`${datePart}T${timePart}`);
+    endDate.setSeconds(endDate.getSeconds() + durationMins * 60);
+    const endWall = `${endDate.getFullYear().toString().padStart(4, '0')}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}T${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}:${endDate.getSeconds().toString().padStart(2, '0')}`;
     const id = crypto.randomUUID();
     const data = await sql`
         INSERT INTO appointments (id, patient_id, start_time, end_time, appointment_type, status, notes)
-        VALUES (${id}, ${patientId}, ${start.toISOString()}, ${end.toISOString()},
+        VALUES (${id}, ${patientId}, ${startWall}, ${endWall},
                 ${appointmentType}, 'scheduled', ${notes ?? null})
         RETURNING *
     `;
@@ -222,18 +252,25 @@ function wallClockToUTC(dateStr: string, wallMinutes: number): Date {
 }
 
 /** Generate every 30-min slot boundary for a calendar day in the clinic's timezone */
-function generateDaySlots(dateStr: string): Date[] {
+function generateDaySlots(dateStr: string): string[] {
+    // Returns wall time slot strings: 'YYYY-MM-DDTHH:mm:ss'
     const [y, m, d] = dateStr.split('-').map(Number);
     const dateForDow = new Date(y, m - 1, d);
     const businessHours = getBusinessHoursForDate(dateForDow, getClinicBusinessHours());
     if (!businessHours) return [];
 
-    const slots: Date[] = [];
-    const current = wallClockToUTC(dateStr, businessHours.startMinutes);
-    const dayEnd = wallClockToUTC(dateStr, businessHours.endMinutes);
-    while (current < dayEnd) {
-        slots.push(new Date(current));
-        current.setUTCMinutes(current.getUTCMinutes() + SLOT_MINUTES);
+    const slots: string[] = [];
+    let h = Math.floor(businessHours.startMinutes / 60);
+    let min = businessHours.startMinutes % 60;
+    let endMins = businessHours.endMinutes;
+    while ((h * 60 + min) < endMins) {
+        const slot = `${dateStr}T${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:00`;
+        slots.push(slot);
+        min += SLOT_MINUTES;
+        if (min >= 60) {
+            h += 1;
+            min = min % 60;
+        }
     }
     return slots;
 }
@@ -247,41 +284,44 @@ export const getAvailableSlots = async (
     appointmentType = 'checkup'
 ) => {
     const sql = getDb();
-    // Build day-of-week reference from calendar components
-    const [y, m, d] = date.split('-').map(Number);
-    const dateForDow = new Date(y, m - 1, d);
-    // Query the full clinic calendar day in the configured timezone
-    const dayStart = wallClockToUTC(date, 0);
-    const dayEnd = wallClockToUTC(date, 24 * 60);
-
+    // Query all appointments for the day (wall time)
     const existing = await sql`
         SELECT start_time, end_time
         FROM appointments
-        WHERE start_time >= ${dayStart.toISOString()}::timestamptz
-          AND start_time <  ${dayEnd.toISOString()}::timestamptz
+        WHERE start_time::date = ${date}::date
           AND status != 'cancelled'
     `;
 
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
     const slots = generateDaySlots(date);
+    // Get business hours for the date
+    const [y, m, d] = date.split('-').map(Number);
+    const dateForDow = new Date(y, m - 1, d);
     const businessHours = getBusinessHoursForDate(dateForDow, getClinicBusinessHours());
     if (!businessHours) return [];
-
-    const businessEnd = wallClockToUTC(date, businessHours.endMinutes);
+    const dayEndMinutes = businessHours.endMinutes;
 
     const available: string[] = [];
     for (const slot of slots) {
-        const slotEnd = new Date(slot.getTime() + durationMins * 60 * 1000);
-        if (slotEnd > businessEnd) continue;
+        // slot is wall time string 'YYYY-MM-DDTHH:mm:ss'
+        const [_, timePart] = slot.split('T');
+        const [h, min] = timePart.split(':').map(Number);
+        const slotStartMinutes = h * 60 + min;
+        const slotEndMinutes = slotStartMinutes + durationMins;
+        // Only allow slots that fit entirely within business hours
+        if (slotEndMinutes > dayEndMinutes) continue;
+
+        const slotStart = new Date(slot);
+        const slotEnd = new Date(slotStart.getTime() + durationMins * 60 * 1000);
 
         const hasConflict = existing.some((appt) => {
             const apptStart = new Date(appt.start_time as string);
             const apptEnd = new Date(appt.end_time as string);
-            return apptStart < slotEnd && apptEnd > slot;
+            return apptStart < slotEnd && apptEnd > slotStart;
         });
 
         if (!hasConflict) {
-            available.push(slot.toISOString());
+            available.push(slot);
         }
     }
     return available;

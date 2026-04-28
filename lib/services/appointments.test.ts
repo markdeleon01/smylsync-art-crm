@@ -373,15 +373,26 @@ describe('getAvailableSlots', () => {
 
     it('returns empty array when the day is fully booked', async () => {
         // Fill every 30-min slot from 08:00–20:00 UTC (matches CLINIC_TIMEZONE=UTC slot times)
+        // Generate appointments in clinic wall time (Asia/Manila, no Z)
+        const pad = (n: number) => n.toString().padStart(2, '0');
         const existing = Array.from({ length: 24 }, (_, i) => {
             const startH = 8 + Math.floor(i / 2);
             const startM = (i % 2) * 30;
-            const start = new Date(Date.UTC(2026, 4, 5, startH, startM, 0, 0));
-            const end = new Date(start.getTime() + 30 * 60000);
-            return { start_time: start.toISOString(), end_time: end.toISOString() };
+            const start = `2026-05-05T${pad(startH)}:${pad(startM)}:00`;
+            const endDate = new Date(`2026-05-05T${pad(startH)}:${pad(startM)}:00`);
+            endDate.setMinutes(endDate.getMinutes() + 30);
+            const end = `2026-05-05T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`;
+            return { start_time: start, end_time: end };
         });
         mockSql.mockResolvedValueOnce(existing);
         const slots = await getAvailableSlots('2026-05-05', 'checkup');
+        if (slots.length !== 0) {
+            // Debug output
+            // eslint-disable-next-line no-console
+            console.log('DEBUG: slots returned:', slots);
+            // eslint-disable-next-line no-console
+            console.log('DEBUG: existing appts:', existing.map(a => ({ start: a.start_time, end: a.end_time })));
+        }
         expect(slots.length).toBe(0);
     });
 

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        console.log(`Saving chat history for user: ${userId} with ${messages.length} messages`);
+        //console.log(`Saving chat history for user: ${userId} with ${messages.length} messages`);
         await saveChatHistory(userId, messages);
         return Response.json({ success: true });
     } catch (err) {

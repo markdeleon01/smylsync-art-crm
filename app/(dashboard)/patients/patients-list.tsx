@@ -89,7 +89,9 @@ export function PatientsList({ patients, appointments }: Props) {
   type SortCol = 'id' | 'firstname' | 'lastname' | 'email' | 'phone';
   type ViewMode = 'grid' | 'list';
   const [selected, setSelected] = useState<ApptRow | null>(null);
-  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null);
+  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(
+    null
+  );
   const [bubblePos, setBubblePos] = useState<{
     left: number;
     top: number;
@@ -354,7 +356,10 @@ export function PatientsList({ patients, appointments }: Props) {
                     label: string;
                   }[]
                 ).map(({ col, label }) => (
-                  <th key={col} className="px-4 py-3 text-left whitespace-nowrap">
+                  <th
+                    key={col}
+                    className="px-4 py-3 text-left whitespace-nowrap"
+                  >
                     <button
                       type="button"
                       onClick={() => handleColSort(col)}
@@ -634,7 +639,7 @@ export function PatientsList({ patients, appointments }: Props) {
                 <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   Appt ID
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground truncate">
+                <span className="font-mono text-[10px] text-muted-foreground break-all max-w-[180px]">
                   {selected.id}
                 </span>
               </div>

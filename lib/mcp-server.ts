@@ -22,7 +22,7 @@ const createPatientSchema = z.object({ firstname: z.string().max(255), lastname:
 const appointmentIdSchema = z.object({ id: z.string() });
 const bookAppointmentSchema = z.object({
     patient_id: z.string(),
-    start_time: z.string().describe('ISO 8601 datetime string, e.g. 2026-04-10T09:00:00Z'),
+    start_time: z.string().describe('Appointment start time as wall time in the clinic timezone (e.g. 2026-04-10T09:00:00). Do NOT use Z or UTC.'),
     appointment_type: z.enum(APPOINTMENT_TYPES),
     notes: z.string().optional()
 });
@@ -494,7 +494,23 @@ export function createMcpServer() {
                 if (slots.length === 0) {
                     return { content: [{ type: "text", text: `No available slots on ${date} for a '${appointment_type ?? 'checkup'}' appointment.` }] };
                 }
-                const formatted = slots.map(s => new Date(s).toISOString()).join('\n');
+                // Format slots as wall time strings in clinic timezone (no Z, no offset)
+                const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+                const formatted = slots.map(s => {
+                    const d = new Date(s);
+                    const parts = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: tz,
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    }).formatToParts(d);
+                    const get = (type: string) => parts.find((p) => p.type === type)?.value;
+                    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+                }).join('\n');
                 return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found):\n${formatted}` }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
@@ -544,7 +560,19 @@ export function createMcpServer() {
                     return { content: [{ type: "text", text: `Appointment booked, but failed to send confirmation email: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
                 }
 
-                const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${appt.start_time}\nEnd: ${appt.end_time}\nStatus: ${appt.status}`;
+                // Format start and end time in clinic timezone for confirmation
+                const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+                const formatWallTime = (iso: string) => {
+                    const d = new Date(iso);
+                    return new Intl.DateTimeFormat('en-US', {
+                        timeZone: tz,
+                        year: 'numeric', month: 'short', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', hour12: false
+                    }).format(d);
+                };
+                const startWall = formatWallTime(appt.start_time);
+                const endWall = formatWallTime(appt.end_time);
+                const text = `Appointment booked successfully.\nID: ${appt.id}\nPatient: ${patient.firstname} ${patient.lastname}\nType: ${appt.appointment_type}\nStart: ${startWall} (${tz})\nEnd: ${endWall} (${tz})\nStatus: ${appt.status}`;
                 return { content: [{ type: "text", text }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);

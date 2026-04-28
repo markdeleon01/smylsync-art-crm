@@ -98,14 +98,29 @@ function isToday(date: Date): boolean {
 }
 
 function minsFromBusinessStart(dt: Date, businessStartMinutes: number): number {
-  return dt.getHours() * 60 + dt.getMinutes() - businessStartMinutes;
+  // Convert UTC date to clinic local time before extracting hours/minutes
+  // Use the same timezone as formatTime (Asia/Manila or process.env.CLINIC_TIMEZONE)
+  const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false
+  }).formatToParts(dt);
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(
+    parts.find((p) => p.type === 'minute')?.value ?? '0',
+    10
+  );
+  return hour * 60 + minute - businessStartMinutes;
 }
 
 function formatTime(dt: Date): string {
   return dt.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: 'Asia/Manila'
   });
 }
 
@@ -277,7 +292,7 @@ function AppointmentBubble({ appt, pos, bubbleRef, onClose }: BubbleProps) {
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
               Appt ID
             </span>
-            <span className="font-mono text-[10px] text-muted-foreground truncate">
+            <span className="font-mono text-[10px] text-muted-foreground break-all max-w-[180px]">
               {appt.id}
             </span>
           </div>

@@ -31,10 +31,9 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 **AI & MCP:**
 
 - AI SDK - [Vercel AI SDK v6](https://sdk.vercel.ai) (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`, `@ai-sdk/mcp`)
-- LLM - OpenAI GPT-5-nano (via `@ai-sdk/openai`)
+- LLM - OpenAI GPT-5.4-nano (via `@ai-sdk/openai`)
 - MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — stateless HTTP transport, 28 registered tools
 - Analytics - [Vercel Analytics](https://vercel.com/analytics)
-
 
 **Email:**
 

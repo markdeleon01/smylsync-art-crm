@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS appointments (
 
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN NOT NULL DEFAULT FALSE;
 
+ALTER TABLE appointments
+    ALTER COLUMN start_time TYPE timestamp WITHOUT time zone USING start_time AT TIME ZONE 'UTC',
+    ALTER COLUMN end_time TYPE timestamp WITHOUT time zone USING end_time AT TIME ZONE 'UTC';
+
+
 CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments (patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_start_time ON appointments (start_time);
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments (status);
