@@ -72,11 +72,19 @@ function addDays(date: Date, days: number): Date {
 }
 
 function formatMonth(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
+  });
 }
 
 function formatDayNumber(date: Date): string {
-  return date.getDate().toString();
+  // Use Manila timezone to get correct day number
+  return date.toLocaleDateString('en-US', {
+    day: 'numeric',
+    timeZone: 'Asia/Manila'
+  });
 }
 
 function formatDayFull(date: Date): string {
@@ -84,7 +92,8 @@ function formatDayFull(date: Date): string {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
   });
 }
 
@@ -245,7 +254,8 @@ function AppointmentBubble({ appt, pos, bubbleRef, onClose }: BubbleProps) {
               {new Date(appt.start_time).toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
-                day: 'numeric'
+                day: 'numeric',
+                timeZone: 'Asia/Manila'
               })}{' '}
               {formatTime(new Date(appt.start_time))}
             </span>
@@ -318,7 +328,11 @@ function addMonths(date: Date, n: number): Date {
 }
 
 function formatMonthYear(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
+  });
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -431,7 +445,9 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
   // Group appointments by ISO date string (YYYY-MM-DD)
   const byDate = new Map<string, AppointmentRow[]>();
   for (const appt of appointments) {
-    const key = new Date(appt.start_time).toLocaleDateString('sv'); // sv locale = YYYY-MM-DD
+    const key = new Date(appt.start_time).toLocaleDateString('sv', {
+      timeZone: 'Asia/Manila'
+    }); // sv locale = YYYY-MM-DD
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push(appt);
   }
@@ -454,7 +470,9 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
         {/* Weeks */}
         <div className="grid grid-cols-7">
           {grid.map((day, i) => {
-            const key = day.toLocaleDateString('sv');
+            const key = day.toLocaleDateString('sv', {
+              timeZone: 'Asia/Manila'
+            });
             const dayAppts = byDate.get(key) ?? [];
             const inMonth = isSameMonth(day, monthStart);
             const todayCell = isSameDay(day, today);
@@ -598,7 +616,10 @@ function DayView({
   }, [selected]);
 
   const todayHighlight = isToday(dayDate);
-  const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayName = dayDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    timeZone: 'Asia/Manila'
+  });
   const dayNum = formatDayNumber(dayDate);
 
   return (
