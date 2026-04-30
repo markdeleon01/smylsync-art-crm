@@ -53,6 +53,8 @@ const STATUS_BADGE: Record<string, string> = {
   rebooked: 'bg-yellow-200 text-yellow-800'
 };
 
+const CLINIC_TIMEZONE = process.env.NEXT_PUBLIC_CLINIC_TIMEZONE || 'Asia/Manila';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -72,11 +74,19 @@ function addDays(date: Date, days: number): Date {
 }
 
 function formatMonth(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: CLINIC_TIMEZONE
+  });
 }
 
 function formatDayNumber(date: Date): string {
-  return date.getDate().toString();
+  // Use Manila timezone to get correct day number
+  return date.toLocaleDateString('en-US', {
+    day: 'numeric',
+    timeZone: CLINIC_TIMEZONE
+  });
 }
 
 function formatDayFull(date: Date): string {
@@ -84,7 +94,8 @@ function formatDayFull(date: Date): string {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: CLINIC_TIMEZONE
   });
 }
 
@@ -100,7 +111,7 @@ function isToday(date: Date): boolean {
 function minsFromBusinessStart(dt: Date, businessStartMinutes: number): number {
   // Convert UTC date to clinic local time before extracting hours/minutes
   // Use the same timezone as formatTime (Asia/Manila or process.env.CLINIC_TIMEZONE)
-  const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+  const tz = CLINIC_TIMEZONE;
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
     hour: 'numeric',
@@ -120,7 +131,7 @@ function formatTime(dt: Date): string {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-    timeZone: 'Asia/Manila'
+    timeZone: CLINIC_TIMEZONE
   });
 }
 
@@ -245,7 +256,8 @@ function AppointmentBubble({ appt, pos, bubbleRef, onClose }: BubbleProps) {
               {new Date(appt.start_time).toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
-                day: 'numeric'
+                day: 'numeric',
+                timeZone: `${CLINIC_TIMEZONE}`
               })}{' '}
               {formatTime(new Date(appt.start_time))}
             </span>
@@ -318,7 +330,11 @@ function addMonths(date: Date, n: number): Date {
 }
 
 function formatMonthYear(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: `${CLINIC_TIMEZONE}`
+  });
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -431,7 +447,9 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
   // Group appointments by ISO date string (YYYY-MM-DD)
   const byDate = new Map<string, AppointmentRow[]>();
   for (const appt of appointments) {
-    const key = new Date(appt.start_time).toLocaleDateString('sv'); // sv locale = YYYY-MM-DD
+    const key = new Date(appt.start_time).toLocaleDateString('sv', {
+      timeZone: CLINIC_TIMEZONE
+    }); // sv locale = YYYY-MM-DD
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push(appt);
   }
@@ -454,7 +472,9 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
         {/* Weeks */}
         <div className="grid grid-cols-7">
           {grid.map((day, i) => {
-            const key = day.toLocaleDateString('sv');
+            const key = day.toLocaleDateString('sv', {
+              timeZone: `${CLINIC_TIMEZONE}`
+            });
             const dayAppts = byDate.get(key) ?? [];
             const inMonth = isSameMonth(day, monthStart);
             const todayCell = isSameDay(day, today);
@@ -598,7 +618,10 @@ function DayView({
   }, [selected]);
 
   const todayHighlight = isToday(dayDate);
-  const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayName = dayDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    timeZone: `${CLINIC_TIMEZONE}`
+  });
   const dayNum = formatDayNumber(dayDate);
 
   return (
