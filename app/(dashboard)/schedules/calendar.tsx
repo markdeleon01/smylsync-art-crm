@@ -53,6 +53,8 @@ const STATUS_BADGE: Record<string, string> = {
   rebooked: 'bg-yellow-200 text-yellow-800'
 };
 
+const CLINIC_TIMEZONE = process.env.NEXT_PUBLIC_CLINIC_TIMEZONE || 'Asia/Manila';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -75,7 +77,7 @@ function formatMonth(date: Date): string {
   return date.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
-    timeZone: 'Asia/Manila'
+    timeZone: CLINIC_TIMEZONE
   });
 }
 
@@ -83,7 +85,7 @@ function formatDayNumber(date: Date): string {
   // Use Manila timezone to get correct day number
   return date.toLocaleDateString('en-US', {
     day: 'numeric',
-    timeZone: 'Asia/Manila'
+    timeZone: CLINIC_TIMEZONE
   });
 }
 
@@ -93,7 +95,7 @@ function formatDayFull(date: Date): string {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'Asia/Manila'
+    timeZone: CLINIC_TIMEZONE
   });
 }
 
@@ -109,7 +111,7 @@ function isToday(date: Date): boolean {
 function minsFromBusinessStart(dt: Date, businessStartMinutes: number): number {
   // Convert UTC date to clinic local time before extracting hours/minutes
   // Use the same timezone as formatTime (Asia/Manila or process.env.CLINIC_TIMEZONE)
-  const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+  const tz = CLINIC_TIMEZONE;
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
     hour: 'numeric',
@@ -129,7 +131,7 @@ function formatTime(dt: Date): string {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-    timeZone: 'Asia/Manila'
+    timeZone: CLINIC_TIMEZONE
   });
 }
 
@@ -255,7 +257,7 @@ function AppointmentBubble({ appt, pos, bubbleRef, onClose }: BubbleProps) {
                 weekday: 'short',
                 month: 'short',
                 day: 'numeric',
-                timeZone: 'Asia/Manila'
+                timeZone: `${CLINIC_TIMEZONE}`
               })}{' '}
               {formatTime(new Date(appt.start_time))}
             </span>
@@ -331,7 +333,7 @@ function formatMonthYear(date: Date): string {
   return date.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
-    timeZone: 'Asia/Manila'
+    timeZone: `${CLINIC_TIMEZONE}`
   });
 }
 
@@ -446,7 +448,7 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
   const byDate = new Map<string, AppointmentRow[]>();
   for (const appt of appointments) {
     const key = new Date(appt.start_time).toLocaleDateString('sv', {
-      timeZone: 'Asia/Manila'
+      timeZone: CLINIC_TIMEZONE
     }); // sv locale = YYYY-MM-DD
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push(appt);
@@ -471,7 +473,7 @@ function MonthView({ monthStart, appointments, isLoading }: MonthViewProps) {
         <div className="grid grid-cols-7">
           {grid.map((day, i) => {
             const key = day.toLocaleDateString('sv', {
-              timeZone: 'Asia/Manila'
+              timeZone: `${CLINIC_TIMEZONE}`
             });
             const dayAppts = byDate.get(key) ?? [];
             const inMonth = isSameMonth(day, monthStart);
@@ -618,7 +620,7 @@ function DayView({
   const todayHighlight = isToday(dayDate);
   const dayName = dayDate.toLocaleDateString('en-US', {
     weekday: 'long',
-    timeZone: 'Asia/Manila'
+    timeZone: `${CLINIC_TIMEZONE}`
   });
   const dayNum = formatDayNumber(dayDate);
 
