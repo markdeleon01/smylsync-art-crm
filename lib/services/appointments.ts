@@ -1,4 +1,7 @@
 import { neon } from '@neondatabase/serverless';
+import { parse, format } from 'date-fns';
+// @ts-ignore: No type declarations for date-fns-tz v1.3.7
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 import { APPOINTMENT_DURATIONS, SLOT_MINUTES } from '@/lib/types';
 import {
     getBusinessHoursForDate,
@@ -91,37 +94,20 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    // Always store times in UTC
-    // Accepts ISO string in clinic local time or UTC, always stores as UTC
+    // Store as local clinic time (naive, no timezone conversion)
+    // Parse as Asia/Manila wall time and save as naive local time string
     const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
-    let startUtc: Date;
-    if (/Z$|[+-]\d{2}:?\d{2}$/.test(startTime)) {
-        // ISO string with Z or offset: parse as UTC/offset
-        startUtc = new Date(startTime);
-    } else {
-        // Assume input is wall time in clinic timezone, convert to UTC
-        // Use Date constructor with 'YYYY-MM-DDTHH:mm:ss' as local, then shift to UTC
-        // This requires a library like luxon or date-fns-tz for robust conversion
-        // For now, fallback to manual conversion
-        const [datePart, timePart] = (startTime.length === 16 ? startTime + ':00' : startTime).split('T');
-        const [h, m, s] = timePart.split(':').map(Number);
-        // Construct a Date in the clinic timezone
-        const local = new Date(`${datePart}T${timePart}`);
-        // Get the offset between UTC and clinic timezone at that date
-        const utcDate = new Date(
-            new Date(
-                new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                    .format(local)
-                    .replace(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/, '$3-$1-$2T$4:$5:$6')
-            ).getTime() + (h * 3600 + m * 60 + s) * 1000
-        );
-        startUtc = utcDate;
-    }
-    const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
+    // Parse input as local time in clinic timezone
+    const startZoned = zonedTimeToUtc(startTime, tz); // get UTC equivalent
+    const start = utcToZonedTime(startZoned, tz); // get Date object in Manila time
+    const end = new Date(start.getTime() + durationMins * 60 * 1000);
+    // Format as 'YYYY-MM-DD HH:mm:ss' (naive, no offset)
+    const startStr = format(start, 'yyyy-MM-dd HH:mm:ss');
+    const endStr = format(end, 'yyyy-MM-dd HH:mm:ss');
     const id = crypto.randomUUID();
     const data = await sql`
         INSERT INTO appointments (id, patient_id, start_time, end_time, appointment_type, status, notes)
-        VALUES (${id}, ${patientId}, ${startUtc.toISOString()}, ${endUtc.toISOString()},
+        VALUES (${id}, ${patientId}, ${startStr}, ${endStr},
                 ${appointmentType}, 'scheduled', ${notes ?? null})
         RETURNING *
     `;
@@ -133,28 +119,18 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    let startUtc: Date;
-    if (/Z$|[+-]\d{2}:?\d{2}$/.test(newStartTime)) {
-        startUtc = new Date(newStartTime);
-    } else {
-        const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
-        const [datePart, timePart] = (newStartTime.length === 16 ? newStartTime + ':00' : newStartTime).split('T');
-        const [h, m, s] = timePart.split(':').map(Number);
-        const local = new Date(`${datePart}T${timePart}`);
-        const utcDate = new Date(
-            new Date(
-                new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                    .format(local)
-                    .replace(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/, '$3-$1-$2T$4:$5:$6')
-            ).getTime() + (h * 3600 + m * 60 + s) * 1000
-        );
-        startUtc = utcDate;
-    }
-    const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
+    // Store as local clinic time (naive, no timezone conversion)
+    // Parse as Asia/Manila wall time and save as naive local time string
+    const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+    const startZoned = zonedTimeToUtc(newStartTime, tz);
+    const start = utcToZonedTime(startZoned, tz);
+    const end = new Date(start.getTime() + durationMins * 60 * 1000);
+    const startStr = format(start, 'yyyy-MM-dd HH:mm:ss');
+    const endStr = format(end, 'yyyy-MM-dd HH:mm:ss');
     const data = await sql`
         UPDATE appointments
-        SET start_time  = ${startUtc.toISOString()},
-            end_time    = ${endUtc.toISOString()},
+        SET start_time  = ${startStr},
+            end_time    = ${endStr},
             status      = 'scheduled',
             updated_at  = NOW()
         WHERE id = ${id}
