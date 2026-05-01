@@ -91,42 +91,37 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    // Store startTime as wall time (no timezone conversion)
-    // Accepts 'YYYY-MM-DDTHH:mm' or ISO string, but always stores as local wall time
-    let startWall: string;
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(startTime)) {
-        // Already wall time string
-        startWall = startTime + ':00'; // add seconds for SQL timestamp
-    } else if (/Z$|[+-]\d{2}:?\d{2}$/.test(startTime)) {
-        // ISO string with Z or offset: convert to clinic wall time
-        const d = new Date(startTime);
-        const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
-        const parts = new Intl.DateTimeFormat('en-US', {
-            timeZone: tz,
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour12: false
-        }).formatToParts(d);
-        const get = (type: string) => parts.find((p) => p.type === type)?.value;
-        startWall = `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+    // Always store times in UTC
+    // Accepts ISO string in clinic local time or UTC, always stores as UTC
+    const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+    let startUtc: Date;
+    if (/Z$|[+-]\d{2}:?\d{2}$/.test(startTime)) {
+        // ISO string with Z or offset: parse as UTC/offset
+        startUtc = new Date(startTime);
     } else {
-        // ISO string without offset: treat as wall time
-        startWall = startTime.length === 16 ? startTime + ':00' : startTime;
+        // Assume input is wall time in clinic timezone, convert to UTC
+        // Use Date constructor with 'YYYY-MM-DDTHH:mm:ss' as local, then shift to UTC
+        // This requires a library like luxon or date-fns-tz for robust conversion
+        // For now, fallback to manual conversion
+        const [datePart, timePart] = (startTime.length === 16 ? startTime + ':00' : startTime).split('T');
+        const [h, m, s] = timePart.split(':').map(Number);
+        // Construct a Date in the clinic timezone
+        const local = new Date(`${datePart}T${timePart}`);
+        // Get the offset between UTC and clinic timezone at that date
+        const utcDate = new Date(
+            new Date(
+                new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    .format(local)
+                    .replace(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/, '$3-$1-$2T$4:$5:$6')
+            ).getTime() + (h * 3600 + m * 60 + s) * 1000
+        );
+        startUtc = utcDate;
     }
-    // Calculate end time as wall time string
-    const [datePart, timePart] = startWall.split('T');
-    const [h, m, s] = timePart.split(':').map(Number);
-    const endDate = new Date(`${datePart}T${timePart}`);
-    endDate.setSeconds(endDate.getSeconds() + durationMins * 60);
-    const endWall = `${endDate.getFullYear().toString().padStart(4, '0')}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}T${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}:${endDate.getSeconds().toString().padStart(2, '0')}`;
+    const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
     const id = crypto.randomUUID();
     const data = await sql`
         INSERT INTO appointments (id, patient_id, start_time, end_time, appointment_type, status, notes)
-        VALUES (${id}, ${patientId}, ${startWall}, ${endWall},
+        VALUES (${id}, ${patientId}, ${startUtc.toISOString()}, ${endUtc.toISOString()},
                 ${appointmentType}, 'scheduled', ${notes ?? null})
         RETURNING *
     `;
@@ -138,12 +133,28 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    const start = new Date(newStartTime);
-    const end = new Date(start.getTime() + durationMins * 60 * 1000);
+    let startUtc: Date;
+    if (/Z$|[+-]\d{2}:?\d{2}$/.test(newStartTime)) {
+        startUtc = new Date(newStartTime);
+    } else {
+        const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+        const [datePart, timePart] = (newStartTime.length === 16 ? newStartTime + ':00' : newStartTime).split('T');
+        const [h, m, s] = timePart.split(':').map(Number);
+        const local = new Date(`${datePart}T${timePart}`);
+        const utcDate = new Date(
+            new Date(
+                new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    .format(local)
+                    .replace(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/, '$3-$1-$2T$4:$5:$6')
+            ).getTime() + (h * 3600 + m * 60 + s) * 1000
+        );
+        startUtc = utcDate;
+    }
+    const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
     const data = await sql`
         UPDATE appointments
-        SET start_time  = ${start.toISOString()},
-            end_time    = ${end.toISOString()},
+        SET start_time  = ${startUtc.toISOString()},
+            end_time    = ${endUtc.toISOString()},
             status      = 'scheduled',
             updated_at  = NOW()
         WHERE id = ${id}
