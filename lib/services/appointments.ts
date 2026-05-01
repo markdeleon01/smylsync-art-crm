@@ -1,7 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { parse, format } from 'date-fns';
-// @ts-ignore: No type declarations for date-fns-tz v1.3.7
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 import { APPOINTMENT_DURATIONS, SLOT_MINUTES } from '@/lib/types';
 import {
     getBusinessHoursForDate,
@@ -94,14 +92,9 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    // Store as local clinic time (naive, no timezone conversion)
-    // Parse as Asia/Manila wall time and save as naive local time string
-    const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
-    // Parse input as local time in clinic timezone
-    const startZoned = zonedTimeToUtc(startTime, tz); // get UTC equivalent
-    const start = utcToZonedTime(startZoned, tz); // get Date object in Manila time
+    // Store and use as naive Asia/Manila wall time (no conversion)
+    const start = new Date(startTime);
     const end = new Date(start.getTime() + durationMins * 60 * 1000);
-    // Format as 'YYYY-MM-DD HH:mm:ss' (naive, no offset)
     const startStr = format(start, 'yyyy-MM-dd HH:mm:ss');
     const endStr = format(end, 'yyyy-MM-dd HH:mm:ss');
     const id = crypto.randomUUID();
@@ -119,11 +112,8 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    // Store as local clinic time (naive, no timezone conversion)
-    // Parse as Asia/Manila wall time and save as naive local time string
-    const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
-    const startZoned = zonedTimeToUtc(newStartTime, tz);
-    const start = utcToZonedTime(startZoned, tz);
+    // Store and use as naive Asia/Manila wall time (no conversion)
+    const start = new Date(newStartTime);
     const end = new Date(start.getTime() + durationMins * 60 * 1000);
     const startStr = format(start, 'yyyy-MM-dd HH:mm:ss');
     const endStr = format(end, 'yyyy-MM-dd HH:mm:ss');
