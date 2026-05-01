@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { APPOINTMENT_DURATIONS, SLOT_MINUTES } from '@/lib/types';
 import {
     getBusinessHoursForDate,
@@ -281,19 +281,25 @@ export const getAvailableSlots = async (
     const available: string[] = [];
     for (const slot of slots) {
         // slot is wall time string 'YYYY-MM-DDTHH:mm:ss'
+        // Replace 'T' with space for correct parsing
+        const slotStr = slot.replace('T', ' ');
+        const slotStart = parse(slotStr, 'yyyy-MM-dd HH:mm:ss', new Date());
+        const slotEnd = new Date(slotStart.getTime() + durationMins * 60 * 1000);
+
+        // Only allow slots that fit entirely within business hours
         const [_, timePart] = slot.split('T');
         const [h, min] = timePart.split(':').map(Number);
         const slotStartMinutes = h * 60 + min;
         const slotEndMinutes = slotStartMinutes + durationMins;
-        // Only allow slots that fit entirely within business hours
         if (slotEndMinutes > dayEndMinutes) continue;
 
-        const slotStart = new Date(slot);
-        const slotEnd = new Date(slotStart.getTime() + durationMins * 60 * 1000);
-
         const hasConflict = existing.some((appt) => {
-            const apptStart = new Date(appt.start_time as string);
-            const apptEnd = new Date(appt.end_time as string);
+            // Normalize to wall time: remove 'Z', milliseconds, and replace 'T' with space
+            const norm = (s: string) => s.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
+            const apptStartStr = norm(appt.start_time as string);
+            const apptEndStr = norm(appt.end_time as string);
+            const apptStart = parse(apptStartStr, 'yyyy-MM-dd HH:mm:ss', new Date());
+            const apptEnd = parse(apptEndStr, 'yyyy-MM-dd HH:mm:ss', new Date());
             return apptStart < slotEnd && apptEnd > slotStart;
         });
 
