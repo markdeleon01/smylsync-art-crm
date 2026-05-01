@@ -281,8 +281,9 @@ export const getAvailableSlots = async (
     const available: string[] = [];
     for (const slot of slots) {
         // slot is wall time string 'YYYY-MM-DDTHH:mm:ss'
-        // Always parse as Asia/Manila wall time
-        const slotStart = parse(slot, 'yyyy-MM-dd HH:mm:ss', new Date());
+        // Replace 'T' with space for correct parsing
+        const slotStr = slot.replace('T', ' ');
+        const slotStart = parse(slotStr, 'yyyy-MM-dd HH:mm:ss', new Date());
         const slotEnd = new Date(slotStart.getTime() + durationMins * 60 * 1000);
 
         // Only allow slots that fit entirely within business hours
@@ -293,9 +294,12 @@ export const getAvailableSlots = async (
         if (slotEndMinutes > dayEndMinutes) continue;
 
         const hasConflict = existing.some((appt) => {
-            // Always parse as Asia/Manila wall time
-            const apptStart = parse(appt.start_time as string, 'yyyy-MM-dd HH:mm:ss', new Date());
-            const apptEnd = parse(appt.end_time as string, 'yyyy-MM-dd HH:mm:ss', new Date());
+            // Normalize to wall time: remove 'Z', milliseconds, and replace 'T' with space
+            const norm = (s: string) => s.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
+            const apptStartStr = norm(appt.start_time as string);
+            const apptEndStr = norm(appt.end_time as string);
+            const apptStart = parse(apptStartStr, 'yyyy-MM-dd HH:mm:ss', new Date());
+            const apptEnd = parse(apptEndStr, 'yyyy-MM-dd HH:mm:ss', new Date());
             return apptStart < slotEnd && apptEnd > slotStart;
         });
 
