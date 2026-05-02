@@ -60,6 +60,8 @@ const CLINIC_TIMEZONE =
 if (typeof window !== 'undefined') {
   // @ts-ignore
   const serverTz = (window as any).__CLINIC_TIMEZONE__;
+  console.log('[Timezone Check] Client timezone:', CLINIC_TIMEZONE);
+  console.log('[Timezone Check] Server timezone:', serverTz);
   if (serverTz && serverTz !== CLINIC_TIMEZONE) {
     // eslint-disable-next-line no-console
     console.warn(
