@@ -7,7 +7,6 @@ import type { Appointment } from '../../lib/types';
 const secret = process.env.CRON_SECRET;
 
 const handler = async () => {
-    console.log('[send-reminders] NEXT_PUBLIC_CLINIC_TIMEZONE: ', process.env.NEXT_PUBLIC_CLINIC_TIMEZONE);
 
     if (!secret) {
         console.error('[send-reminders] CRON_SECRET not set');
@@ -35,6 +34,8 @@ const handler = async () => {
             sent++;
         }
 
+        console.log('[send-reminders] CLINIC_TIMEZONE: ', process.env.CLINIC_TIMEZONE);
+        console.log('[send-reminders] NEXT_PUBLIC_CLINIC_TIMEZONE: ', process.env.NEXT_PUBLIC_CLINIC_TIMEZONE);
         console.log(`[send-reminders] Processed ${appointments.length} due: ${sent} sent, ${skipped} skipped`);
         return {
             statusCode: 200,
