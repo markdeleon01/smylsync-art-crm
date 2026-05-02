@@ -15,9 +15,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Read the server-side env variable
+  const serverTz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+
   return (
     <html lang="en">
       <body className="flex min-h-screen w-full flex-col">
+        {/* Inject the server timezone as a global variable */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__CLINIC_TIMEZONE__ = ${JSON.stringify(serverTz)};`
+          }}
+        />
         {children}
         <LoadingSpinner />
       </body>
