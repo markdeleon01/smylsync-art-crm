@@ -2,11 +2,18 @@ import { neon } from '@neondatabase/serverless';
 import { format, parse } from 'date-fns';
 // @ts-ignore
 import { zonedTimeToUtc } from 'date-fns-tz';
+
 import { APPOINTMENT_DURATIONS, SLOT_MINUTES } from '@/lib/types';
 import {
     getBusinessHoursForDate,
     getClinicBusinessHours
 } from '@/lib/clinic-hours';
+
+// Enforce that CLINIC_TIMEZONE must be set
+const CLINIC_TIMEZONE = process.env.CLINIC_TIMEZONE;
+if (!CLINIC_TIMEZONE) {
+    throw new Error('CLINIC_TIMEZONE environment variable must be set.');
+}
 
 const getDb = () => neon(process.env.POSTGRES_URL!);
 
@@ -94,7 +101,7 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    const clinicTz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+    const clinicTz = CLINIC_TIMEZONE;
     // Convert the provided startTime (clinic local time) to UTC
     const startUtc = zonedTimeToUtc(startTime, clinicTz);
     const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
@@ -115,7 +122,7 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    const clinicTz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+    const clinicTz = CLINIC_TIMEZONE;
     // Convert the provided newStartTime (clinic local time) to UTC
     const startUtc = zonedTimeToUtc(newStartTime, clinicTz);
     const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
@@ -212,7 +219,7 @@ export const markReminderSent = async (id: string) => {
  * Works correctly for fixed-offset zones (e.g. Asia/Manila UTC+8) and DST zones.
  */
 function wallClockToUTC(dateStr: string, wallMinutes: number): Date {
-    const tz = process.env.CLINIC_TIMEZONE ?? 'UTC';
+    const tz = CLINIC_TIMEZONE;
     const [y, m, d] = dateStr.split('-').map(Number);
     const h = Math.floor(wallMinutes / 60);
     const min = wallMinutes % 60;
@@ -266,7 +273,7 @@ export const getAvailableSlots = async (
 ) => {
     // DEBUG: Log timezone environment and Intl support
     if (process.env.NODE_ENV !== 'production' || process.env.NETLIFY) {
-        const tz = process.env.CLINIC_TIMEZONE;
+        const tz = CLINIC_TIMEZONE;
         const testDate = new Date('2026-05-02T10:00:00');
         let resolvedTz = 'unknown';
         let formatted = 'error';
