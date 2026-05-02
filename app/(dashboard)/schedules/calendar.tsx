@@ -56,6 +56,19 @@ const STATUS_BADGE: Record<string, string> = {
 const CLINIC_TIMEZONE =
   process.env.NEXT_PUBLIC_CLINIC_TIMEZONE || 'Asia/Manila';
 
+// Warn in dev if client/server timezone config differs
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  const serverTz = (window as any).__CLINIC_TIMEZONE__;
+  if (serverTz && serverTz !== CLINIC_TIMEZONE) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[Timezone Mismatch] NEXT_PUBLIC_CLINIC_TIMEZONE (client) = '${CLINIC_TIMEZONE}', CLINIC_TIMEZONE (server) = '${serverTz}'.\n` +
+        'This can cause appointment times to display incorrectly. Ensure both are set to the same value.'
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
