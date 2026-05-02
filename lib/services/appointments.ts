@@ -271,21 +271,19 @@ export const getAvailableSlots = async (
     date: string,
     appointmentType = 'checkup'
 ) => {
-    // DEBUG: Log timezone environment and Intl support
-    if (process.env.NODE_ENV !== 'production' || process.env.NETLIFY) {
-        const tz = CLINIC_TIMEZONE;
-        const testDate = new Date('2026-05-02T10:00:00');
-        let resolvedTz = 'unknown';
-        let formatted = 'error';
-        try {
-            resolvedTz = new Intl.DateTimeFormat('en-US', { timeZone: tz }).resolvedOptions().timeZone;
-            formatted = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false }).format(testDate);
-        } catch (e: any) {
-            formatted = 'Intl error: ' + (e && e.message);
-        }
-        // eslint-disable-next-line no-console
-        console.log('[DEBUG][getAvailableSlots] CTC_TZ:', tz, '| Intl resolved:', resolvedTz, '| 10:00:', formatted);
+    // DEBUG: Log timezone environment and Intl support (always log for diagnosis)
+    const tz = CLINIC_TIMEZONE;
+    const testDate = new Date('2026-05-02T10:00:00');
+    let resolvedTz = 'unknown';
+    let formatted = 'error';
+    try {
+        resolvedTz = new Intl.DateTimeFormat('en-US', { timeZone: tz }).resolvedOptions().timeZone;
+        formatted = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false }).format(testDate);
+    } catch (e: any) {
+        formatted = 'Intl error: ' + (e && e.message);
     }
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG][getAvailableSlots] process.env.CLINIC_TIMEZONE:', process.env.CLINIC_TIMEZONE, '| CLINIC_TIMEZONE const:', tz, '| Intl resolved:', resolvedTz, '| 10:00:', formatted);
     const sql = getDb();
     // Query all appointments for the day (wall time)
     const existing = await sql`
@@ -301,6 +299,9 @@ export const getAvailableSlots = async (
     const [y, m, d] = date.split('-').map(Number);
     const dateForDow = new Date(y, m - 1, d);
     const businessHours = getBusinessHoursForDate(dateForDow, getClinicBusinessHours());
+    // Debug: print business hours and generated slots
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG][getAvailableSlots] For date:', date, '| businessHours:', businessHours, '| slots:', slots);
     if (!businessHours) return [];
     const dayEndMinutes = businessHours.endMinutes;
 
