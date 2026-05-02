@@ -1,5 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { format, parse } from 'date-fns';
+// @ts-ignore
+import { zonedTimeToUtc } from 'date-fns-tz';
 import { APPOINTMENT_DURATIONS, SLOT_MINUTES } from '@/lib/types';
 import {
     getBusinessHoursForDate,
@@ -92,11 +94,12 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    // Store and use as naive Asia/Manila wall time (no conversion)
-    const start = new Date(startTime);
-    const end = new Date(start.getTime() + durationMins * 60 * 1000);
-    const startStr = format(start, 'yyyy-MM-dd HH:mm:ss');
-    const endStr = format(end, 'yyyy-MM-dd HH:mm:ss');
+    const clinicTz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+    // Convert the provided startTime (clinic local time) to UTC
+    const startUtc = zonedTimeToUtc(startTime, clinicTz);
+    const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
+    const startStr = format(startUtc, 'yyyy-MM-dd HH:mm:ss');
+    const endStr = format(endUtc, 'yyyy-MM-dd HH:mm:ss');
     const id = crypto.randomUUID();
     const data = await sql`
         INSERT INTO appointments (id, patient_id, start_time, end_time, appointment_type, status, notes)
@@ -112,11 +115,12 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    // Store and use as naive Asia/Manila wall time (no conversion)
-    const start = new Date(newStartTime);
-    const end = new Date(start.getTime() + durationMins * 60 * 1000);
-    const startStr = format(start, 'yyyy-MM-dd HH:mm:ss');
-    const endStr = format(end, 'yyyy-MM-dd HH:mm:ss');
+    const clinicTz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+    // Convert the provided newStartTime (clinic local time) to UTC
+    const startUtc = zonedTimeToUtc(newStartTime, clinicTz);
+    const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
+    const startStr = format(startUtc, 'yyyy-MM-dd HH:mm:ss');
+    const endStr = format(endUtc, 'yyyy-MM-dd HH:mm:ss');
     const data = await sql`
         UPDATE appointments
         SET start_time  = ${startStr},
@@ -260,6 +264,21 @@ export const getAvailableSlots = async (
     date: string,
     appointmentType = 'checkup'
 ) => {
+    // DEBUG: Log timezone environment and Intl support
+    if (process.env.NODE_ENV !== 'production' || process.env.NETLIFY) {
+        const tz = process.env.CLINIC_TIMEZONE;
+        const testDate = new Date('2026-05-02T10:00:00');
+        let resolvedTz = 'unknown';
+        let formatted = 'error';
+        try {
+            resolvedTz = new Intl.DateTimeFormat('en-US', { timeZone: tz }).resolvedOptions().timeZone;
+            formatted = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false }).format(testDate);
+        } catch (e: any) {
+            formatted = 'Intl error: ' + (e && e.message);
+        }
+        // eslint-disable-next-line no-console
+        console.log('[DEBUG][getAvailableSlots] CTC_TZ:', tz, '| Intl resolved:', resolvedTz, '| 10:00:', formatted);
+    }
     const sql = getDb();
     // Query all appointments for the day (wall time)
     const existing = await sql`
