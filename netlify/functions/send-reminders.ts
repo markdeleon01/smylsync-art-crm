@@ -7,6 +7,8 @@ import type { Appointment } from '../../lib/types';
 const secret = process.env.CRON_SECRET;
 
 const handler = async () => {
+    console.log('[send-reminders] NEXT_PUBLIC_CLINIC_TIMEZONE: ', process.env.NEXT_PUBLIC_CLINIC_TIMEZONE);
+
     if (!secret) {
         console.error('[send-reminders] CRON_SECRET not set');
         return { statusCode: 500, body: 'Server configuration error.' };
