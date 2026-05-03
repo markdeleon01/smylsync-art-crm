@@ -120,7 +120,7 @@ export const getAvailableSlots = async (
 
 const handler = async () => {
 
-    console.log('[send-reminders] Available slots for 2026-05-05: ', await getAvailableSlots('2026-05-05'));
+    console.log('[DEBUG][get-available-slots] Available slots for 2026-05-05: ', await getAvailableSlots('2026-05-05'));
         
 }
 
