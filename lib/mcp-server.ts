@@ -490,26 +490,21 @@ export function createMcpServer() {
         },
         async ({ date, appointment_type }: { date: string; appointment_type?: typeof APPOINTMENT_TYPES[number] }) => {
             try {
+                // Use date-fns-tz to treat slot strings as wall time in the clinic timezone
+                // @ts-ignore
+                const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
                 const slots = await getAvailableSlots(date, appointment_type ?? 'checkup');
                 if (slots.length === 0) {
                     return { content: [{ type: "text", text: `No available slots on ${date} for a '${appointment_type ?? 'checkup'}' appointment.` }] };
                 }
-                // Format slots as wall time strings in clinic timezone (no Z, no offset)
                 const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
+                // Parse slot as wall time in clinic timezone, then format as local time string
                 const formatted = slots.map(s => {
-                    const d = new Date(s);
-                    const parts = new Intl.DateTimeFormat('en-CA', {
-                        timeZone: tz,
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false
-                    }).formatToParts(d);
-                    const get = (type: string) => parts.find((p) => p.type === type)?.value;
-                    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+                    // s is 'YYYY-MM-DDTHH:mm:ss' in clinic wall time
+                    // Convert to UTC, then to a Date object
+                    const utcDate = zonedTimeToUtc(s, tz);
+                    // Format as wall time string in clinic timezone
+                    return format(utcDate, "yyyy-MM-dd'T'HH:mm:ss", { timeZone: tz });
                 }).join('\n');
                 return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found):\n${formatted}` }] };
             } catch (err) {
