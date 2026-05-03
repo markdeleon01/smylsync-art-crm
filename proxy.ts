@@ -5,7 +5,7 @@ const JWT_SECRET = new TextEncoder().encode(
     process.env.JWT_SECRET ?? 'fallback-secret'
 );
 
-const PUBLIC_PATHS = ['/login', '/api/auth', '/api/art', '/api/mcp', '/.netlify/functions/send-reminders'];
+const PUBLIC_PATHS = ['/login', '/api/auth', '/api/art', '/api/mcp', '/.netlify/functions/send-reminders', '/.netlify/functions/get-available-slots'];
 
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
