@@ -9,10 +9,12 @@ import {
     getClinicBusinessHours
 } from '@/lib/clinic-hours';
 
-// Enforce that CLINIC_TIMEZONE must be set
-const CLINIC_TIMEZONE = process.env.CLINIC_TIMEZONE;
-if (!CLINIC_TIMEZONE) {
-    throw new Error('CLINIC_TIMEZONE environment variable must be set.');
+// Enforce that CLINIC_TIMEZONE must be set. Evaluated lazily so tests can set
+// the env var before importing (module-level evaluation runs before beforeEach).
+function getClinicTimezone(): string {
+    const tz = process.env.CLINIC_TIMEZONE;
+    if (!tz) throw new Error('CLINIC_TIMEZONE environment variable must be set.');
+    return tz;
 }
 
 const getDb = () => neon(process.env.POSTGRES_URL!);
@@ -101,7 +103,7 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    const clinicTz = CLINIC_TIMEZONE;
+    const clinicTz = getClinicTimezone();
     // Convert the provided startTime (clinic local time) to UTC
     const startUtc = zonedTimeToUtc(startTime, clinicTz);
     const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
@@ -122,7 +124,7 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    const clinicTz = CLINIC_TIMEZONE;
+    const clinicTz = getClinicTimezone();
     // Convert the provided newStartTime (clinic local time) to UTC
     const startUtc = zonedTimeToUtc(newStartTime, clinicTz);
     const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
@@ -219,7 +221,7 @@ export const markReminderSent = async (id: string) => {
  * Works correctly for fixed-offset zones (e.g. Asia/Manila UTC+8) and DST zones.
  */
 function wallClockToUTC(dateStr: string, wallMinutes: number): Date {
-    const tz = CLINIC_TIMEZONE;
+    const tz = getClinicTimezone();
     const [y, m, d] = dateStr.split('-').map(Number);
     const h = Math.floor(wallMinutes / 60);
     const min = wallMinutes % 60;
@@ -272,7 +274,7 @@ export const getAvailableSlots = async (
     appointmentType = 'checkup'
 ) => {
     // DEBUG: Log timezone environment and Intl support (always log for diagnosis)
-    const tz = CLINIC_TIMEZONE;
+    const tz = getClinicTimezone();
     const testDate = new Date('2026-05-02T10:00:00');
     let resolvedTz = 'unknown';
     let formatted = 'error';
@@ -327,7 +329,7 @@ export const getAvailableSlots = async (
 
         // Convert slot wall-clock time to UTC so it can be compared correctly
         // with appointment start/end times which are stored in UTC.
-        const slotStartUtc = zonedTimeToUtc(slot, CLINIC_TIMEZONE as string);
+        const slotStartUtc = zonedTimeToUtc(slot, getClinicTimezone());
         const slotEndUtc = new Date(slotStartUtc.getTime() + durationMins * 60 * 1000);
 
         const hasConflict = existing.some((appt) => {
