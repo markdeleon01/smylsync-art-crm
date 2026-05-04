@@ -2,7 +2,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { NextRequest } from "next/server";
 import { createMcpServer } from "@/lib/mcp-server";
 
-export const maxDuration = 120; // seconds — Vercel only; Netlify timeout is set in netlify.toml
+export const maxDuration = 120; // seconds (Vercel Pro/Enterprise; adjust to 60 on Hobby plan)
 
 async function handleMcpRequest(req: NextRequest): Promise<Response> {
     // Stateless mode: create a fresh server + transport per request (no Redis needed)
