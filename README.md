@@ -38,7 +38,7 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 **Email:**
 
 - [Nodemailer](https://nodemailer.com) over SMTP — booking confirmations, rescheduling notices, cancellation notices, and 24-hour reminder emails
-- Automated reminders via a [Vercel Cron Job](https://vercel.com/docs/cron-jobs) (`/api/cron/send-reminders`) that runs every hour on the hour
+- Automated reminders via a [Vercel Cron Job](https://vercel.com/docs/cron-jobs) (`/api/cron/send-reminders`) that runs once daily at midnight UTC
 
 **Testing & Quality:**
 
@@ -179,7 +179,7 @@ The application will be available at `http://localhost:8080`.
 
 ### Setting up Automated Reminders
 
-Appointment reminders are dispatched by `app/api/cron/send-reminders/route.ts`, a [Vercel Cron Job](https://vercel.com/docs/cron-jobs) scheduled to run every hour on the hour (`0 * * * *`) via `vercel.json`.
+Appointment reminders are dispatched by `app/api/cron/send-reminders/route.ts`, a [Vercel Cron Job](https://vercel.com/docs/cron-jobs) scheduled to run once daily at midnight UTC (`0 0 * * *`) via `vercel.json`. Each run checks for all scheduled appointments starting within the next 24 hours that have not yet received a reminder, and dispatches an email to each.
 
 Vercel calls the route as a `GET` request and automatically adds `Authorization: Bearer <CRON_SECRET>`. The route returns `401` for any request that does not carry the correct header.
 
