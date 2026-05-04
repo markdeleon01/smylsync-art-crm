@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 // @ts-ignore
 import { zonedTimeToUtc } from 'date-fns-tz';
 
@@ -9,10 +9,12 @@ import {
     getClinicBusinessHours
 } from '@/lib/clinic-hours';
 
-// Enforce that CLINIC_TIMEZONE must be set
-const CLINIC_TIMEZONE = process.env.CLINIC_TIMEZONE;
-if (!CLINIC_TIMEZONE) {
-    throw new Error('CLINIC_TIMEZONE environment variable must be set.');
+// Enforce that CLINIC_TIMEZONE must be set. Evaluated lazily so tests can set
+// the env var before importing (module-level evaluation runs before beforeEach).
+function getClinicTimezone(): string {
+    const tz = process.env.CLINIC_TIMEZONE;
+    if (!tz) throw new Error('CLINIC_TIMEZONE environment variable must be set.');
+    return tz;
 }
 
 const getDb = () => neon(process.env.POSTGRES_URL!);
@@ -101,7 +103,7 @@ export const bookAppointment = async (
 ) => {
     const sql = getDb();
     const durationMins = APPOINTMENT_DURATIONS[appointmentType] ?? 30;
-    const clinicTz = CLINIC_TIMEZONE;
+    const clinicTz = getClinicTimezone();
     // Convert the provided startTime (clinic local time) to UTC
     const startUtc = zonedTimeToUtc(startTime, clinicTz);
     const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
@@ -122,7 +124,7 @@ export const rebookAppointment = async (id: string, newStartTime: string) => {
     const current = await getAppointmentById(id);
     if (!current) throw new Error(`Appointment ${id} not found`);
     const durationMins = APPOINTMENT_DURATIONS[current.appointment_type as string] ?? 30;
-    const clinicTz = CLINIC_TIMEZONE;
+    const clinicTz = getClinicTimezone();
     // Convert the provided newStartTime (clinic local time) to UTC
     const startUtc = zonedTimeToUtc(newStartTime, clinicTz);
     const endUtc = new Date(startUtc.getTime() + durationMins * 60 * 1000);
@@ -219,7 +221,7 @@ export const markReminderSent = async (id: string) => {
  * Works correctly for fixed-offset zones (e.g. Asia/Manila UTC+8) and DST zones.
  */
 function wallClockToUTC(dateStr: string, wallMinutes: number): Date {
-    const tz = CLINIC_TIMEZONE;
+    const tz = getClinicTimezone();
     const [y, m, d] = dateStr.split('-').map(Number);
     const h = Math.floor(wallMinutes / 60);
     const min = wallMinutes % 60;
@@ -272,7 +274,7 @@ export const getAvailableSlots = async (
     appointmentType = 'checkup'
 ) => {
     // DEBUG: Log timezone environment and Intl support (always log for diagnosis)
-    const tz = CLINIC_TIMEZONE;
+    const tz = getClinicTimezone();
     const testDate = new Date('2026-05-02T10:00:00');
     let resolvedTz = 'unknown';
     let formatted = 'error';
@@ -305,14 +307,19 @@ export const getAvailableSlots = async (
     if (!businessHours) return [];
     const dayEndMinutes = businessHours.endMinutes;
 
+    // Helper: convert a DB timestamp value (string or Date object) to a UTC Date.
+    // Neon may return Date objects or strings depending on the environment.
+    const toUtcDate = (v: unknown): Date => {
+        if (v instanceof Date) return v;
+        const s = String(v);
+        // ISO strings with Z or offset are already UTC-aware
+        if (s.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(s)) return new Date(s);
+        // Stored as UTC without timezone marker (e.g. '2026-05-05 02:00:00')
+        return new Date(s.replace(' ', 'T') + 'Z');
+    };
+
     const available: string[] = [];
     for (const slot of slots) {
-        // slot is wall time string 'YYYY-MM-DDTHH:mm:ss'
-        // Replace 'T' with space for correct parsing
-        const slotStr = slot.replace('T', ' ');
-        const slotStart = parse(slotStr, 'yyyy-MM-dd HH:mm:ss', new Date());
-        const slotEnd = new Date(slotStart.getTime() + durationMins * 60 * 1000);
-
         // Only allow slots that fit entirely within business hours
         const [_, timePart] = slot.split('T');
         const [h, min] = timePart.split(':').map(Number);
@@ -320,14 +327,15 @@ export const getAvailableSlots = async (
         const slotEndMinutes = slotStartMinutes + durationMins;
         if (slotEndMinutes > dayEndMinutes) continue;
 
+        // Convert slot wall-clock time to UTC so it can be compared correctly
+        // with appointment start/end times which are stored in UTC.
+        const slotStartUtc = zonedTimeToUtc(slot, getClinicTimezone());
+        const slotEndUtc = new Date(slotStartUtc.getTime() + durationMins * 60 * 1000);
+
         const hasConflict = existing.some((appt) => {
-            // Normalize to wall time: remove 'Z', milliseconds, and replace 'T' with space
-            const norm = (s: string) => s.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
-            const apptStartStr = norm(appt.start_time as string);
-            const apptEndStr = norm(appt.end_time as string);
-            const apptStart = parse(apptStartStr, 'yyyy-MM-dd HH:mm:ss', new Date());
-            const apptEnd = parse(apptEndStr, 'yyyy-MM-dd HH:mm:ss', new Date());
-            return apptStart < slotEnd && apptEnd > slotStart;
+            const apptStart = toUtcDate(appt.start_time);
+            const apptEnd = toUtcDate(appt.end_time);
+            return apptStart < slotEndUtc && apptEnd > slotStartUtc;
         });
 
         if (!hasConflict) {
