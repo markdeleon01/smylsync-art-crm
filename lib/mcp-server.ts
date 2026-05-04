@@ -490,23 +490,15 @@ export function createMcpServer() {
         },
         async ({ date, appointment_type }: { date: string; appointment_type?: typeof APPOINTMENT_TYPES[number] }) => {
             try {
-                // Use date-fns-tz to treat slot strings as wall time in the clinic timezone
-                // @ts-ignore
-                const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
                 const slots = await getAvailableSlots(date, appointment_type ?? 'checkup');
                 if (slots.length === 0) {
                     return { content: [{ type: "text", text: `No available slots on ${date} for a '${appointment_type ?? 'checkup'}' appointment.` }] };
                 }
                 const tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila';
-                // Parse slot as wall time in clinic timezone, then format as local time string
-                const formatted = slots.map(s => {
-                    // s is 'YYYY-MM-DDTHH:mm:ss' in clinic wall time
-                    // Convert to UTC, then to a Date object
-                    const utcDate = zonedTimeToUtc(s, tz);
-                    // Format as wall time string in clinic timezone
-                    return format(utcDate, "yyyy-MM-dd'T'HH:mm:ss", { timeZone: tz });
-                }).join('\n');
-                return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found):\n${formatted}` }] };
+                // Slots are already wall-clock strings in the clinic timezone (e.g. '2026-05-05T10:00:00')
+                // Return them as-is — no UTC conversion needed.
+                const formatted = slots.join('\n');
+                return { content: [{ type: "text", text: `Available slots on ${date} (${slots.length} found, times in ${tz}):\n${formatted}` }] };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 return { content: [{ type: "text", text: `Failed to retrieve available slots: ${msg}` }], isError: true };
