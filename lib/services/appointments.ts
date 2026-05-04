@@ -194,8 +194,8 @@ export const getAppointmentsDueForReminder = async () => {
         JOIN patients p ON a.patient_id = p.id
         WHERE a.status = 'scheduled'
           AND a.reminder_sent = FALSE
-          AND a.start_time > NOW() + INTERVAL '23 hours'
-          AND a.start_time <= NOW() + INTERVAL '25 hours'
+          AND a.start_time > NOW()
+          AND a.start_time <= NOW() + INTERVAL '24 hours'
         ORDER BY a.start_time ASC
     `;
 };
