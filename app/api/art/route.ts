@@ -4,7 +4,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createMcpServer } from '@/lib/mcp-server';
 
-export const maxDuration = 120; // seconds — Vercel only; Netlify timeout is set in netlify.toml
+export const maxDuration = 120; // seconds (Vercel Pro/Enterprise; adjust to 60 on Hobby plan)
 
 export async function POST(req: Request) {
     const { message, history = [], localDate }: { message: string; history: { role: 'user' | 'assistant'; content: string }[]; localDate?: string } = await req.json();

@@ -25,20 +25,20 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 - UI Components - [Shadcn UI](https://ui.shadcn.com/) with Lucide React icons
 - Authentication - Custom JWT with email/password
 - Database - [PostgreSQL via Neon](https://neon.tech) with [Drizzle ORM](https://orm.drizzle.team)
-- Deployment - [Netlify](https://netlify.com) (Next.js plugin + scheduled functions)
+- Deployment - [Vercel](https://vercel.com) (Next.js native, zero-config)
 - Formatting - [Prettier](https://prettier.io)
 
 **AI & MCP:**
 
 - AI SDK - [Vercel AI SDK v6](https://sdk.vercel.ai) (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`, `@ai-sdk/mcp`)
 - LLM - OpenAI GPT-5.4-nano (via `@ai-sdk/openai`)
-- MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — stateless HTTP transport, 28 registered tools
+- MCP Server - [Model Context Protocol SDK](https://modelcontextprotocol.io) (`@modelcontextprotocol/sdk`) — in-process InMemory transport (ART agent), HTTP endpoint also exposed via `/api/[transport]`; 28 registered tools
 - Analytics - [Vercel Analytics](https://vercel.com/analytics)
 
 **Email:**
 
 - [Nodemailer](https://nodemailer.com) over SMTP — booking confirmations, rescheduling notices, cancellation notices, and 24-hour reminder emails
-- Automated reminders via a Netlify [Scheduled Function](https://docs.netlify.com/functions/scheduled-functions/) (`send-reminders.ts`) that runs every hour on the hour
+- Automated reminders via a [Vercel Cron Job](https://vercel.com/docs/cron-jobs) (`/api/cron/send-reminders`) that runs every hour on the hour
 
 **Testing & Quality:**
 
@@ -55,13 +55,13 @@ SMYLSYNC is a dental practice CRM and admin dashboard featuring an AI-powered op
 - 📧 **Email Notifications** - Booking confirmations, rescheduling notices, cancellation notices, and automated 24-hour reminders
 - 🔐 **Authentication** - Secure login with email and password for staff access
 - 📱 **Responsive Design** - Mobile-friendly layouts with responsive sidebar navigation
-- 🧪 **Comprehensive Tests** - 224 unit tests + 114 e2e tests
+- 🧪 **Comprehensive Tests** - 253 unit tests + 114 e2e tests
 - 🔄 **CI/CD Pipeline** - Automated testing and deployment with CircleCI
 - 🎨 **Modern UI** - Shadcn UI components with Tailwind CSS
 
 ## MCP Tools
 
-The ART agent is powered by a Model Context Protocol (MCP) server with 28 registered tools for managing dental practice operations. The server is stateless and uses HTTP transport.
+The ART agent is powered by a Model Context Protocol (MCP) server with 28 registered tools for managing dental practice operations. The ART chat endpoint uses an in-process InMemory transport (no external HTTP round-trips); the same server is also exposed as a stateless HTTP endpoint at `/api/[transport]`.
 
 ### Patient Management Tools (14 tools)
 
@@ -123,7 +123,7 @@ Create a `.env` file in the project root and configure the following variables:
 
 ```bash
 # Database
-DATABASE_URL=         # PostgreSQL connection string (e.g. Neon)
+POSTGRES_URL=         # PostgreSQL connection string (e.g. Neon)
 
 # AI
 OPENAI_API_KEY=       # OpenAI API key
@@ -141,6 +141,10 @@ SMTP_PASS=
 SMTP_FROM=            # e.g. noreply@yourdomain.com
 SMTP_FROM_NAME=       # e.g. SMYLSYNC
 
+# Timezone (required — used for appointment slot generation, reminders, and calendar display)
+CLINIC_TIMEZONE=Asia/Manila             # IANA timezone identifier
+NEXT_PUBLIC_CLINIC_TIMEZONE=Asia/Manila # Same value, exposed to the browser
+
 # Clinic business hours shown in Schedules and used for open-slot generation
 # Format: HH:MM-HH:MM or "closed"
 CLINIC_HOURS_MONDAY=08:00-17:00
@@ -151,9 +155,8 @@ CLINIC_HOURS_FRIDAY=08:00-17:00
 CLINIC_HOURS_SATURDAY=08:00-17:00
 CLINIC_HOURS_SUNDAY=08:00-17:00
 
-# Automated reminders (required for the GitHub Actions cron job)
-CRON_SECRET=          # Any strong random string
-URL=                  # Public base URL in production (set automatically by Netlify)
+# Automated reminders (used by the Vercel cron job)
+CRON_SECRET=          # Any strong random string; set in Vercel project settings
 ```
 
 3. **Database Setup:**
@@ -176,17 +179,17 @@ The application will be available at `http://localhost:8080`.
 
 ### Setting up Automated Reminders
 
-Since Netlify scheduled functions require a paid plan, automated appointment reminders are handled via GitHub Actions:
+Appointment reminders are dispatched by `app/api/cron/send-reminders/route.ts`, a [Vercel Cron Job](https://vercel.com/docs/cron-jobs) scheduled to run every hour on the hour (`0 * * * *`) via `vercel.json`.
 
-1. **Set up GitHub Secrets:**
+Vercel calls the route as a `GET` request and automatically adds `Authorization: Bearer <CRON_SECRET>`. The route returns `401` for any request that does not carry the correct header.
 
-   - Go to your repository Settings → Secrets and variables → Actions
-   - Add `SITE_URL`: Your deployed Netlify site URL (e.g., `https://your-site.netlify.app`)
-   - Add `CRON_SECRET`: The same value as your `CRON_SECRET` environment variable
+> **Note:** Cron jobs are available on all Vercel plans. On the Hobby plan the minimum interval is 1 day; the Pro plan supports up to 1-minute intervals.
 
-2. **The workflow will automatically run every hour** to send appointment reminders.
+To enable automated reminders, set the following environment variables in your Vercel project settings:
 
-**Note:** The `/api/reminders` endpoint is configured as a public API route that accepts Bearer token authentication for automated cron jobs.
+- `CRON_SECRET` — any strong random string (Vercel forwards it as the `Authorization` bearer token)
+- `CLINIC_TIMEZONE` — IANA timezone for the clinic (e.g. `Asia/Manila`)
+- SMTP credentials (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_FROM_NAME`)
 
 ### Available Scripts
 
@@ -207,7 +210,7 @@ pnpm run cypress:run:headed  # Run Cypress tests in a headed browser
 
 ## Testing
 
-This project includes 224 unit tests and 114 e2e tests covering all major components, API routes, and service layers.
+This project includes 253 unit tests and 114 e2e tests covering all major components, API routes, and service layers.
 
 ### Unit Tests with Vitest
 
@@ -223,22 +226,22 @@ pnpm run test:coverage     # Generate coverage reports
 
 | Test File                                         | Tests   | Coverage                                             |
 | ------------------------------------------------- | ------- | ---------------------------------------------------- |
-| `lib/services/appointments.test.ts`               | 35      | Booking, rebooking, cancellation, availability       |
-| `app/(dashboard)/patients/patients-list.test.tsx` | 49      | Rendering, search, sort, badges, bubble, persistence |
-| `app/api/[transport]/route.test.ts`               | 30      | MCP server tools — patients & appointments           |
-| `lib/services/patients.test.ts`                   | 12      | Patient CRUD operations                              |
-| `components/art/index.test.tsx`                   | 21      | Toggle, messages, persistence, accessibility         |
-| `app/api/reminders/route.test.ts`                 | 8       | Auth guard, reminder dispatch, edge cases            |
-| `lib/services/email.test.ts`                      | 9       | Email sending, SMTP fallback                         |
-| `app/(dashboard)/patients/page.test.tsx`          | 11      | Page loading, content structure                      |
-| `app/(dashboard)/loading-spinner.test.tsx`        | 7       | Spinner rendering and accessibility                  |
+| `app/api/[transport]/route.test.ts`               | 49      | MCP server tools — patients & appointments           |
+| `app/(dashboard)/patients/patients-list.test.tsx` | 55      | Rendering, search, sort, badges, bubble, persistence |
+| `lib/services/appointments.test.ts`               | 37      | Booking, rebooking, cancellation, availability       |
+| `components/art/index.test.tsx`                   | 25      | Toggle, messages, persistence, accessibility         |
 | `app/(dashboard)/schedules/actions.test.ts`       | 19      | Server actions for calendar data                     |
+| `app/(dashboard)/patients/page.test.tsx`          | 11      | Page loading, content structure                      |
+| `lib/services/patients.test.ts`                   | 12      | Patient CRUD operations                              |
+| `lib/services/email.test.ts`                      | 9       | Email sending, SMTP fallback                         |
+| `app/(dashboard)/loading-spinner.test.tsx`        | 7       | Spinner rendering and accessibility                  |
+| `lib/clinic-hours.test.ts`                        | 6       | Business hours parsing and slot generation           |
 | `app/(dashboard)/schedules/page.test.tsx`         | 5       | Schedules page rendering                             |
 | `app/(dashboard)/page.test.tsx`                   | 6       | Dashboard home rendering                             |
 | `app/login/page.test.tsx`                         | 6       | Auth UI, form structure                              |
 | `app/api/patients/route.test.ts`                  | 3       | Patients API GET/POST                                |
 | `app/api/patients/[id]/route.test.ts`             | 3       | Patients API GET/PATCH/DELETE by ID                  |
-| **Total**                                         | **224** | **All major components, routes, and services**       |
+| **Total**                                         | **253** | **All major components, routes, and services**       |
 
 **Test Configuration:**
 
@@ -309,7 +312,7 @@ The pipeline executes 5 interconnected jobs:
 
 2. **unit-tests** (2-4 minutes, runs after install-and-cache)
 
-   - Executes all 224 Vitest tests
+   - Executes all 253 Vitest tests
    - Stores test results and coverage reports
    - Artifacts: `test-results/`, `coverage/`
 
@@ -340,7 +343,7 @@ install-and-cache
 
 ### Expected Test Results
 
-- ✅ 224 Unit tests (100%)
+- ✅ 253 Unit tests (100%)
 - ✅ Type checking (100%)
 - ✅ Build compilation (100%)
 - ✅ 114 E2E tests (100%)
@@ -355,7 +358,7 @@ install-and-cache
 
 2. **Set Environment Variables in CircleCI:**
 
-   In the CircleCI project settings, add the same variables from your `.env` file. At minimum, `DATABASE_URL`, `OPENAI_API_KEY`, and `JWT_SECRET` are required for the build to succeed.
+   In the CircleCI project settings, add the same variables from your `.env` file. At minimum, `POSTGRES_URL`, `OPENAI_API_KEY`, and `JWT_SECRET` are required for the build to succeed.
 
 3. **Monitor Results:**
    - **CircleCI Dashboard:** [app.circleci.com](https://app.circleci.com)
@@ -383,11 +386,13 @@ See [CIRCLECI.md](./CIRCLECI.md) for modifying pipeline stages, adding jobs, and
 ```
 app/
   ├── api/
-  │   ├── [transport]/        # MCP server (stateless HTTP, 28 tools)
-  │   ├── art/                # ART chat endpoint (streamText + MCP client)
+  │   ├── [transport]/        # MCP server HTTP endpoint (28 tools)
+  │   ├── art/                # ART chat endpoint (streamText + in-process MCP client)
   │   ├── appointments/       # Appointments REST API
-  │   ├── patients/           # Patients REST API
-  │   └── reminders/          # Cron-triggered reminder dispatcher
+  │   ├── chat-history/       # Save/retrieve ART chat history
+  │   ├── cron/
+  │   │   └── send-reminders/ # Vercel Cron Job — sends 24-hour reminder emails (hourly)
+  │   └── patients/           # Patients REST API
   ├── login/                  # Login page
   └── (dashboard)/
       ├── page.tsx            # Dashboard home
@@ -408,21 +413,17 @@ components/
 
 lib/
   ├── db.ts                   # Neon/Postgres connection
+  ├── clinic-hours.ts         # Business hours parsing and slot generation
   ├── types.ts                # Shared types (Patient, Appointment, APPOINTMENT_TYPES)
   ├── hooks/
   │   └── useChat.ts          # AI chat hook
   └── services/
       ├── appointments.ts     # Appointment CRUD, availability, autofill, reminders
+      ├── chat-history.ts     # Chat history persistence
       ├── patients.ts         # Patient CRUD
       └── email.ts            # Nodemailer email helpers
 
-netlify/
-  └── functions/
-      └── send-reminders.ts   # Legacy Netlify function (scheduled functions require paid plan)
-
-.github/
-  └── workflows/
-      └── send-reminders.yml  # GitHub Actions workflow for automated reminders
+vercel.json                   # Vercel cron job schedule
 
 scripts/
   ├── migrate.ts              # Run database migrations
@@ -434,7 +435,6 @@ cypress/
 vitest.config.mts             # Vitest configuration
 vitest.setup.ts               # Test setup and global mocks
 cypress.config.ts             # Cypress configuration
-netlify.toml                  # Netlify build + functions config
 next.config.ts                # Next.js configuration
 tailwind.config.ts            # Tailwind CSS configuration
 ```
