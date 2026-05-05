@@ -151,7 +151,10 @@ import { GET } from '@/app/api/[transport]/route';
 // Making a real (mocked) GET request causes createMcpServer() to run and
 // populate hoisted.registeredTools with all tool handlers.
 beforeAll(async () => {
-    await GET(new Request('http://localhost/api/mcp') as NextRequest);
+    process.env.MCP_API_KEY = 'test-mcp-key';
+    await GET(new Request('http://localhost/api/mcp', {
+        headers: { authorization: 'Bearer test-mcp-key' },
+    }) as NextRequest);
 });
 
 // ── Fixtures ───────────────────────────────────────────────────────────────

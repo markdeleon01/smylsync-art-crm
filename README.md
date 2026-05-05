@@ -142,21 +142,24 @@ SMTP_FROM=            # e.g. noreply@yourdomain.com
 SMTP_FROM_NAME=       # e.g. SMYLSYNC
 
 # Timezone (required — used for appointment slot generation, reminders, and calendar display)
-CLINIC_TIMEZONE=Asia/Manila             # IANA timezone identifier
-NEXT_PUBLIC_CLINIC_TIMEZONE=Asia/Manila # Same value, exposed to the browser
+CLINIC_TIMEZONE=             # IANA timezone identifier
+NEXT_PUBLIC_CLINIC_TIMEZONE= # Same value, exposed to the browser
 
 # Clinic business hours shown in Schedules and used for open-slot generation
 # Format: HH:MM-HH:MM or "closed"
-CLINIC_HOURS_MONDAY=08:00-17:00
-CLINIC_HOURS_TUESDAY=08:00-17:00
-CLINIC_HOURS_WEDNESDAY=08:00-17:00
-CLINIC_HOURS_THURSDAY=08:00-17:00
-CLINIC_HOURS_FRIDAY=08:00-17:00
-CLINIC_HOURS_SATURDAY=08:00-17:00
-CLINIC_HOURS_SUNDAY=08:00-17:00
+CLINIC_HOURS_MONDAY=08:00-20:00
+CLINIC_HOURS_TUESDAY=08:00-20:00
+CLINIC_HOURS_WEDNESDAY=08:00-20:00
+CLINIC_HOURS_THURSDAY=08:00-20:00
+CLINIC_HOURS_FRIDAY=08:00-20:00
+CLINIC_HOURS_SATURDAY=08:00-20:00
+CLINIC_HOURS_SUNDAY=08:00-20:00
 
 # Automated reminders (used by the Vercel cron job)
 CRON_SECRET=          # Any strong random string; set in Vercel project settings
+
+# API key for the HTTP MCP server endpoint (/api/[transport])
+MCP_API_KEY=          # Any strong random string; required in Authorization: Bearer header
 ```
 
 3. **Database Setup:**

@@ -5,6 +5,16 @@ import { createMcpServer } from "@/lib/mcp-server";
 export const maxDuration = 120; // seconds (Vercel Pro/Enterprise; adjust to 60 on Hobby plan)
 
 async function handleMcpRequest(req: NextRequest): Promise<Response> {
+    const apiKey = process.env.MCP_API_KEY;
+    if (!apiKey) {
+        console.error('[mcp] MCP_API_KEY environment variable is not set');
+        return Response.json({ error: 'Server configuration error.' }, { status: 500 });
+    }
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${apiKey}`) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Stateless mode: create a fresh server + transport per request (no Redis needed)
     const transport = new WebStandardStreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
