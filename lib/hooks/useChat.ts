@@ -2,6 +2,12 @@
 
 import { useState, useCallback } from 'react';
 
+const CLINIC_TIMEZONE = process.env.NEXT_PUBLIC_CLINIC_TIMEZONE || 'Asia/Manila';
+
+function getClinicTimestamp(): string {
+    return new Date().toLocaleString('sv', { timeZone: CLINIC_TIMEZONE });
+}
+
 export interface Message {
     id: string;
     role: 'user' | 'assistant';
@@ -38,7 +44,7 @@ export function useChat(options?: UseChatOptions) {
                 id: Date.now().toString(),
                 role: 'user',
                 content: userMessage,
-                timestamp: new Date().toISOString(),
+                timestamp: getClinicTimestamp(),
             };
 
             setMessages((prev) => [...prev, userMsg]);
@@ -122,7 +128,7 @@ export function useChat(options?: UseChatOptions) {
                 setMessages((prev) =>
                     prev.map((msg) =>
                         msg.id === assistantId
-                            ? { ...msg, timestamp: new Date().toISOString() }
+                            ? { ...msg, timestamp: getClinicTimestamp() }
                             : msg
                     )
                 );
